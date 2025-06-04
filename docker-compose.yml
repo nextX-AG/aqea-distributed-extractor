@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: aqea
+      POSTGRES_USER: aqea
+      POSTGRES_PASSWORD: aqea
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aqea -d aqea"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - aqea-network
+
+  # Master Coordinator
+  master:
+    build:
+      context: .
+      target: master
+    environment:
+      - AQEA_ROLE=master
+      - AQEA_PORT=8080
+      - DATABASE_URL=postgresql://aqea:aqea@database:5432/aqea
+      - AQEA_CONFIG_FILE=/app/config/default.yml
+    ports:
+      - "8080:8080"
+      - "8090:8090"  # Monitoring dashboard
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config:ro
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - aqea-network
+    command: ["python", "-m", "src.main", "start_master", "--language", "de", "--source", "wiktionary"]
+
+  # Worker Nodes (scaled dynamically)
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      - AQEA_ROLE=worker
+      - MASTER_HOST=master
+      - MASTER_PORT=8080
+      - DATABASE_URL=postgresql://aqea:aqea@database:5432/aqea
+      - AQEA_CONFIG_FILE=/app/config/default.yml
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    depends_on:
+      master:
+        condition: service_healthy
+    networks:
+      - aqea-network
+    deploy:
+      replicas: 3
+    command: ["python", "-m", "src.main", "start_worker"]
+
+  # Redis (for advanced coordination, optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - aqea-network
+
+  # Monitoring Dashboard (optional)
+  monitoring:
+    build:
+      context: .
+      target: development
+    environment:
+      - AQEA_ROLE=monitor
+      - MASTER_HOST=master
+      - MASTER_PORT=8080
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config:ro
+    depends_on:
+      - master
+    networks:
+      - aqea-network
+    command: ["python", "-m", "src.main", "status", "--watch"]
+
+  # pgAdmin (for database management, development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aqea.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - database
+    networks:
+      - aqea-network
+    profiles:
+      - development
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  aqea-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Override for production
+x-production-overrides: &production-overrides
+  deploy:
+    resources:
+      limits:
+        memory: 1G
+        cpus: '1.0'
+      reservations:
+        memory: 512M
+        cpus: '0.5'
+    restart_policy:
+      condition: on-failure
+      delay: 5s
+      max_attempts: 3
+
+# Override for development
+x-development-overrides: &development-overrides
+  volumes:
+    - .:/app:delegated
+  environment:
+    - ENVIRONMENT=development
+    - DEBUG=true 

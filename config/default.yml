@@ -1,0 +1,194 @@
+# AQEA Distributed Extractor Configuration
+# Default settings for distributed language data extraction
+
+# Database Configuration
+database:
+  host: localhost
+  port: 5432
+  database: aqea
+  username: aqea
+  password: aqea
+  pool_size: 10
+
+# Language Configurations
+languages:
+  de:
+    name: "German"
+    estimated_entries: 800000
+    alphabet_ranges:
+      - start: "A"
+        end: "E"
+        weight: 0.20
+      - start: "F"
+        end: "J"
+        weight: 0.15
+      - start: "K"
+        end: "O"
+        weight: 0.175
+      - start: "P"
+        end: "T"
+        weight: 0.225
+      - start: "U"
+        end: "Z"
+        weight: 0.25
+    supported_pos: ["noun", "verb", "adjective", "adverb", "pronoun", "preposition"]
+    frequency_threshold: 1
+
+  en:
+    name: "English"
+    estimated_entries: 6000000
+    alphabet_ranges:
+      - start: "A"
+        end: "E"
+        weight: 0.20
+      - start: "F"
+        end: "J"
+        weight: 0.15
+      - start: "K"
+        end: "O"
+        weight: 0.175
+      - start: "P"
+        end: "T"
+        weight: 0.225
+      - start: "U"
+        end: "Z"
+        weight: 0.25
+    supported_pos: ["noun", "verb", "adjective", "adverb", "pronoun", "preposition"]
+    frequency_threshold: 1
+
+  fr:
+    name: "French"
+    estimated_entries: 4000000
+    alphabet_ranges:
+      - start: "A"
+        end: "E"
+        weight: 0.20
+      - start: "F"
+        end: "J"
+        weight: 0.15
+      - start: "K"
+        end: "O"
+        weight: 0.175
+      - start: "P"
+        end: "T"
+        weight: 0.225
+      - start: "U"
+        end: "Z"
+        weight: 0.25
+    supported_pos: ["noun", "verb", "adjective", "adverb", "pronoun", "preposition"]
+    frequency_threshold: 1
+
+  es:
+    name: "Spanish"
+    estimated_entries: 1000000
+    alphabet_ranges:
+      - start: "A"
+        end: "E"
+        weight: 0.20
+      - start: "F"
+        end: "J"
+        weight: 0.15
+      - start: "K"
+        end: "O"
+        weight: 0.175
+      - start: "P"
+        end: "T"
+        weight: 0.225
+      - start: "U"
+        end: "Z"
+        weight: 0.25
+    supported_pos: ["noun", "verb", "adjective", "adverb", "pronoun", "preposition"]
+    frequency_threshold: 1
+
+# Cloud Provider Configurations
+cloud_providers:
+  hetzner:
+    name: "Hetzner Cloud"
+    master_instance_type: "cx21"
+    worker_instance_type: "cx11"
+    cost_per_hour: 0.015  # EUR
+    max_workers: 20
+    regions: ["nbg1", "fsn1", "hel1"]
+
+  digitalocean:
+    name: "DigitalOcean"
+    master_instance_type: "s-2vcpu-4gb"
+    worker_instance_type: "s-1vcpu-2gb"
+    cost_per_hour: 0.024  # USD
+    max_workers: 20
+    regions: ["fra1", "ams3", "nyc1"]
+
+  linode:
+    name: "Linode"
+    master_instance_type: "g6-standard-2"
+    worker_instance_type: "g6-nanode-1"
+    cost_per_hour: 0.018  # USD
+    max_workers: 15
+    regions: ["eu-west", "eu-central", "us-east"]
+
+# Data Source Configurations
+data_sources:
+  wiktionary:
+    request_delay: 0.2  # seconds between requests
+    batch_size: 50
+    max_retries: 3
+    timeout: 30
+    base_urls:
+      de: "https://de.wiktionary.org/w/api.php"
+      en: "https://en.wiktionary.org/w/api.php"
+      fr: "https://fr.wiktionary.org/w/api.php"
+      es: "https://es.wiktionary.org/w/api.php"
+
+  panlex:
+    enabled: false  # Future implementation
+    api_url: "https://api.panlex.org"
+    batch_size: 100
+    rate_limit: 1000  # requests per hour
+
+  wikidata:
+    enabled: false  # Future implementation
+    sparql_endpoint: "https://query.wikidata.org/sparql"
+    batch_size: 100
+    timeout: 60
+
+# Extraction Settings
+extraction:
+  default_batch_size: 50
+  progress_report_interval: 100  # Report every N entries
+  max_definitions: 3
+  max_forms: 5
+  max_concurrent_workers: 10
+  worker_timeout: 300  # seconds
+  master_port: 8080
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "colored"  # colored, json
+  file: null  # Set to path for file logging
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+
+# Performance Tuning
+performance:
+  coordination_overhead: 0.1  # 10% overhead
+  api_rate_limit_factor: 0.95  # 5% reduction for API limits
+  base_entries_per_minute: 50  # Single server baseline
+  memory_limit_mb: 1024  # Memory limit per worker
+  connection_pool_size: 20
+
+# Monitoring
+monitoring:
+  enabled: true
+  update_interval: 30  # seconds
+  metrics_retention: 1000  # number of samples
+  dashboard_port: 8090
+
+# Security (for production deployments)
+security:
+  api_key: null  # Set for production
+  ssl_enabled: false
+  cors_origins: ["*"]
+  rate_limiting:
+    enabled: false
+    requests_per_minute: 100 

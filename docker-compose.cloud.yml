@@ -1,0 +1,222 @@
+version: '3.8'
+
+# AQEA Distributed Extractor - Cloud Database Configuration
+# Zentrale Datenbank (Supabase/PlanetScale) statt lokaler PostgreSQL
+
+services:
+  # ==========================================================================
+  # MASTER COORDINATOR (Verbindet zu zentraler DB)
+  # ==========================================================================
+  master:
+    build:
+      context: .
+      target: master
+    environment:
+      - AQEA_ROLE=master
+      - AQEA_PORT=8080
+      # ✅ Zentrale Supabase-Datenbank statt lokale PostgreSQL
+      - DATABASE_URL=${SUPABASE_DATABASE_URL}
+      - AQEA_CONFIG_FILE=/app/config/cloud-database.yml
+      # Cloud-specific Settings
+      - CLOUD_PROVIDER=${CLOUD_PROVIDER:-hetzner}
+      - CLOUD_REGION=${CLOUD_REGION:-nbg1}
+      - MASTER_ID=${MASTER_ID:-master-${CLOUD_PROVIDER}-1}
+    ports:
+      - "${MASTER_PORT:-8080}:8080"
+      - "${DASHBOARD_PORT:-8090}:8090"
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - aqea-network
+    # ❌ Keine DB-Abhängigkeit mehr - externe DB
+    # depends_on:
+    #   database:
+    #     condition: service_healthy
+    command: ["python", "-m", "src.main", "start_master", "--language", "${LANGUAGE:-de}", "--source", "wiktionary"]
+
+  # ==========================================================================
+  # WORKER NODES (Skalierbar über Cloud-Provider)
+  # ==========================================================================
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      - AQEA_ROLE=worker
+      - MASTER_HOST=${MASTER_HOST:-master}
+      - MASTER_PORT=${MASTER_PORT:-8080}
+      # ✅ Zentrale Datenbank für alle Worker
+      - DATABASE_URL=${SUPABASE_DATABASE_URL}
+      - AQEA_CONFIG_FILE=/app/config/cloud-database.yml
+      # Worker-spezifische Einstellungen
+      - WORKER_ID_PREFIX=${CLOUD_PROVIDER:-hetzner}
+      - CLOUD_PROVIDER=${CLOUD_PROVIDER:-hetzner}
+      - CLOUD_REGION=${CLOUD_REGION:-nbg1}
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    depends_on:
+      - master
+    networks:
+      - aqea-network
+    deploy:
+      replicas: ${WORKER_COUNT:-3}
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    command: ["python", "-m", "src.main", "start_worker"]
+
+  # ==========================================================================
+  # MONITORING & STATUS (Optional)
+  # ==========================================================================
+  monitoring:
+    build:
+      context: .
+      target: development
+    environment:
+      - AQEA_ROLE=monitor
+      - MASTER_HOST=${MASTER_HOST:-master}
+      - MASTER_PORT=${MASTER_PORT:-8080}
+      - DATABASE_URL=${SUPABASE_DATABASE_URL}
+    ports:
+      - "${MONITORING_PORT:-3000}:3000"
+    volumes:
+      - ./config:/app/config:ro
+    depends_on:
+      - master
+    networks:
+      - aqea-network
+    profiles:
+      - monitoring
+    command: ["python", "-m", "src.main", "status", "--watch"]
+
+  # ==========================================================================
+  # REDIS CACHE (Optional - für Performance)
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - aqea-network
+    profiles:
+      - cache
+
+  # ==========================================================================
+  # PROMETHEUS METRICS (Optional)
+  # ==========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - aqea-network
+    profiles:
+      - monitoring
+
+  # ==========================================================================
+  # GRAFANA DASHBOARD (Optional)
+  # ==========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/:/etc/grafana/provisioning/
+    networks:
+      - aqea-network
+    profiles:
+      - monitoring
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aqea-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# =============================================================================
+# ENVIRONMENT VARIABLES DOCUMENTATION
+# =============================================================================
+# 
+# Erforderliche Environment Variables:
+# 
+# SUPABASE_DATABASE_URL=postgresql://postgres:[password]@[project].supabase.co:5432/postgres
+# CLOUD_PROVIDER=hetzner|digitalocean|linode
+# CLOUD_REGION=nbg1|fra1|eu-west
+# WORKER_COUNT=3
+# LANGUAGE=de|en|fr|es
+# 
+# Optionale Variables:
+# MASTER_PORT=8080
+# DASHBOARD_PORT=8090
+# MONITORING_PORT=3000
+# REDIS_PORT=6379
+# PROMETHEUS_PORT=9090
+# GRAFANA_PORT=3001
+# GRAFANA_PASSWORD=admin
+# 
+# Deployment Commands:
+# 
+# # Hetzner Cloud Deployment
+# export CLOUD_PROVIDER=hetzner
+# export CLOUD_REGION=nbg1
+# export WORKER_COUNT=5
+# export SUPABASE_DATABASE_URL="postgresql://postgres:xxx@xxx.supabase.co:5432/postgres"
+# docker-compose -f docker-compose.cloud.yml up -d
+# 
+# # DigitalOcean Deployment  
+# export CLOUD_PROVIDER=digitalocean
+# export CLOUD_REGION=fra1
+# export WORKER_COUNT=3
+# docker-compose -f docker-compose.cloud.yml up -d
+# 
+# # Mit Monitoring
+# docker-compose -f docker-compose.cloud.yml --profile monitoring up -d
+# 

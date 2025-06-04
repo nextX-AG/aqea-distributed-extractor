@@ -1,0 +1,219 @@
+# AQEA Distributed Extractor - Cloud Database Configuration
+# Zentrale Datenbank für alle Cloud-Instanzen
+
+# =============================================================================
+# ZENTRALE DATENBANK KONFIGURATION
+# =============================================================================
+
+# Supabase Configuration (Empfohlen)
+database:
+  provider: "supabase"
+  
+  # Connection Details
+  host: "your-project.supabase.co"
+  port: 5432
+  database: "postgres"
+  username: "postgres"
+  password: "${SUPABASE_PASSWORD}"  # Aus Environment Variable
+  ssl_mode: "require"
+  
+  # Connection URL (Alternative)
+  url: "postgresql://postgres:${SUPABASE_PASSWORD}@your-project.supabase.co:5432/postgres?sslmode=require"
+  
+  # Pool Settings für hohe Parallelität
+  pool_size: 50  # Für viele gleichzeitige Worker
+  max_overflow: 100
+  pool_timeout: 30
+  pool_recycle: 3600
+
+# =============================================================================
+# MULTI-CLOUD DEPLOYMENT KONFIGURATION
+# =============================================================================
+
+cloud_deployment:
+  strategy: "multi_provider"  # Verschiedene Provider nutzen
+  
+  # Master-Verteilung (je Provider ein Master für Redundanz)
+  masters:
+    hetzner:
+      enabled: true
+      region: "nbg1"
+      instance_type: "cx21"
+      max_workers: 10
+      
+    digitalocean:
+      enabled: true
+      region: "fra1" 
+      instance_type: "s-2vcpu-4gb"
+      max_workers: 10
+      
+    linode:
+      enabled: false  # Optional
+      region: "eu-west"
+      instance_type: "g6-standard-2"
+      max_workers: 5
+
+  # Worker-Verteilung
+  worker_distribution:
+    total_workers: 20
+    allocation:
+      hetzner: 12      # 60% (günstigster Provider)
+      digitalocean: 8  # 40%
+      linode: 0        # Deaktiviert
+
+# =============================================================================
+# KOORDINATION & SYNCHRONISATION
+# =============================================================================
+
+coordination:
+  # Zentrale Koordination über DB statt HTTP
+  mode: "database_coordination"
+  
+  # Work-Unit Management
+  work_units:
+    lock_timeout: 300  # 5 Minuten
+    heartbeat_interval: 30  # Sekunden
+    retry_failed_after: 600  # 10 Minuten
+    
+  # AQEA Address Management
+  address_generation:
+    collision_detection: true
+    retry_on_collision: 3
+    reserve_address_before_processing: true
+
+# =============================================================================
+# PERFORMANCE TUNING
+# =============================================================================
+
+performance:
+  # Batch-Größen für DB-Operations
+  db_batch_size: 100
+  commit_frequency: 50  # Commit alle 50 Einträge
+  
+  # Caching
+  redis_cache:
+    enabled: true
+    provider: "upstash"  # Serverless Redis
+    url: "${REDIS_URL}"
+    
+  # Monitoring
+  metrics:
+    provider: "prometheus"
+    push_gateway: "${METRICS_URL}"
+    push_interval: 60
+
+# =============================================================================
+# FEHLERBEHANDLUNG & RESILIENCE
+# =============================================================================
+
+resilience:
+  # Automatisches Retry bei DB-Fehlern
+  database_retry:
+    max_attempts: 3
+    backoff_factor: 2
+    
+  # Worker-Ausfall-Behandlung
+  worker_failure:
+    reassign_work_after: 600  # 10 Minuten
+    max_consecutive_failures: 5
+    
+  # Netzwerk-Partitionierung
+  network_partition:
+    detection_timeout: 120
+    fallback_mode: "local_queue"
+
+# =============================================================================
+# SICHERHEIT
+# =============================================================================
+
+security:
+  # Verschlüsselung
+  encryption:
+    in_transit: true  # SSL/TLS
+    at_rest: true     # DB-Level Encryption
+    
+  # Authentifizierung
+  auth:
+    api_key: "${AQEA_API_KEY}"
+    worker_tokens: true
+    token_rotation: 86400  # 24 Stunden
+    
+  # Rate Limiting
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 1000
+    burst_capacity: 200
+
+# =============================================================================
+# MONITORING & OBSERVABILITY
+# =============================================================================
+
+monitoring:
+  # Zentrale Logs
+  logging:
+    provider: "datadog"  # oder "logdna", "papertrail"
+    api_key: "${LOGGING_API_KEY}"
+    structured: true
+    
+  # Metriken
+  metrics:
+    enabled: true
+    real_time_dashboard: true
+    alerts:
+      - metric: "worker_failure_rate"
+        threshold: 0.1  # 10%
+        action: "slack_notification"
+      - metric: "extraction_rate"
+        threshold: 30   # Einträge/min
+        comparison: "less_than"
+        action: "scale_up"
+
+# =============================================================================
+# COST OPTIMIZATION
+# =============================================================================
+
+cost_optimization:
+  # Automatische Worker-Skalierung basierend auf Kosten
+  auto_scaling:
+    enabled: true
+    target_cost_per_hour: 5.00  # EUR
+    scale_up_threshold: 0.8      # Bei 80% Auslastung
+    scale_down_threshold: 0.3    # Bei 30% Auslastung
+    
+  # Preemptible/Spot Instances
+  spot_instances:
+    enabled: true
+    max_interruption_rate: 0.2  # 20%
+    fallback_to_regular: true
+    
+  # Provider-Kosten-Tracking
+  cost_tracking:
+    enabled: true
+    budget_limit: 100.00  # EUR
+    budget_alerts: [50, 75, 90, 95]  # Prozent
+
+# =============================================================================
+# LANGUAGE-SPECIFIC SETTINGS
+# =============================================================================
+
+extraction_strategies:
+  # Verschiedene Sprachen parallel extrahieren
+  parallel_languages:
+    enabled: true
+    languages: ["de", "en", "fr", "es"]
+    
+  # Language-specific Worker-Allocation
+  language_workers:
+    de: 8   # Deutsch (größte Priorität)
+    en: 6   # Englisch  
+    fr: 4   # Französisch
+    es: 2   # Spanisch
+    
+  # Load Balancing zwischen Sprachen
+  load_balancing:
+    strategy: "weighted_round_robin"
+    weights:
+      de: 0.4  # 40%
+      en: 0.3  # 30% 
+      fr: 0.2  # 20%
+      es: 0.1  # 10% 
