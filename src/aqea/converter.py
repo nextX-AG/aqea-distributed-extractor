@@ -130,13 +130,19 @@ class AQEAConverter:
     async def _generate_address(self, entry: Dict[str, Any]) -> Optional[str]:
         """Generate AQEA 4-byte address for the entry."""
         try:
-            word = entry['word']
+            word = entry.get('word', '')
+            if word is None:
+                word = ''
             
             # Domain byte (AA) - Language
             aa = self.domain_byte
             
             # Category byte (QQ) - Part of Speech
-            pos = entry.get('pos', 'unknown').lower()
+            pos = entry.get('pos', 'unknown')
+            if pos is not None:
+                pos = pos.lower()
+            else:
+                pos = 'unknown'
             qq = self.POS_CATEGORIES.get(pos, self.POS_CATEGORIES['unknown'])
             
             # Subcategory byte (EE) - Semantic category
@@ -155,12 +161,16 @@ class AQEAConverter:
     
     def _determine_semantic_category(self, entry: Dict[str, Any]) -> int:
         """Determine semantic category based on entry content."""
-        word = entry.get('word', '').lower()
+        word = entry.get('word', '')
+        if word is None:
+            word = ''
+        word = word.lower()
+        
         definitions = entry.get('definitions', [])
         labels = entry.get('labels', [])
         
         # Combine all text for analysis
-        text_for_analysis = f"{word} {' '.join(definitions)} {' '.join(labels)}".lower()
+        text_for_analysis = f"{word} {' '.join(str(d) for d in definitions if d is not None)} {' '.join(str(l) for l in labels if l is not None)}".lower()
         
         # Keyword-based categorization
         categorization_rules = {

@@ -241,6 +241,7 @@ class ExtractionWorker:
     
     async def work_loop(self):
         """Main work loop - request and process work units."""
+        task_session = None
         while self.is_running:
             try:
                 # Request work from master
@@ -303,6 +304,15 @@ class ExtractionWorker:
                 logger.error(f"Error in heartbeat loop: {e}")
                 await asyncio.sleep(60)
     
+    async def cleanup_sessions(self):
+        """Cleanup all client sessions properly."""
+        if hasattr(self, 'session') and self.session:
+            try:
+                await self.session.close()
+                logger.debug(f"Closed client session for worker {self.worker_id}")
+            except Exception as e:
+                logger.error(f"Error closing client session: {e}")
+    
     async def run(self):
         """Start the worker."""
         logger.info(f"Starting extraction worker {self.worker_id}")
@@ -312,19 +322,19 @@ class ExtractionWorker:
         # Create HTTP session
         self.session = ClientSession()
         
-        # Try to connect to Supabase database (optional for local testing)
         try:
-            self.database = await get_database(self.config)
-            if self.database and hasattr(self.database, 'pool') and self.database.pool:
-                logger.info("✅ Connected to Supabase database")
-            else:
-                raise Exception("Database connection returned None or invalid pool")
-        except Exception as e:
-            logger.warning(f"⚠️ Could not connect to Supabase database: {e}")
-            logger.info("📝 Running in HTTP-only mode (no database integration)")
-            self.database = None
-        
-        try:
+            # Try to connect to Supabase database (optional for local testing)
+            try:
+                self.database = await get_database(self.config)
+                if self.database and hasattr(self.database, 'pool') and self.database.pool:
+                    logger.info("✅ Connected to Supabase database")
+                else:
+                    raise Exception("Database connection returned None or invalid pool")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not connect to Supabase database: {e}")
+                logger.info("📝 Running in HTTP-only mode (no database integration)")
+                self.database = None
+            
             # Register with master (HTTP)
             registration_attempts = 5
             for attempt in range(registration_attempts):
@@ -368,8 +378,8 @@ class ExtractionWorker:
             logger.error(f"Worker {self.worker_id} error: {e}")
         finally:
             self.is_running = False
-            if self.session:
-                await self.session.close()
+            # Clean up sessions
+            await self.cleanup_sessions()
             
             logger.info(f"Worker {self.worker_id} stopped. Total processed: {self.total_processed}")
 

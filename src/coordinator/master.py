@@ -15,6 +15,14 @@ import json
 logger = logging.getLogger(__name__)
 
 
+class DateTimeEncoder(json.JSONEncoder):
+    """JSON Encoder that can handle datetime objects."""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+
 @dataclass
 class WorkUnit:
     """A unit of work to be processed by a worker."""
@@ -271,9 +279,7 @@ class MasterCoordinator:
         
         work_unit = await self.assign_work(worker_id)
         if work_unit:
-            work_data = asdict(work_unit)
-            work_data = self._serialize_datetime_objects(work_data)
-            return web.json_response(work_data)
+            return web.json_response(asdict(work_unit), dumps=lambda obj: json.dumps(obj, cls=DateTimeEncoder))
         else:
             return web.json_response({'message': 'No work available'}, status=204)
     
@@ -298,9 +304,7 @@ class MasterCoordinator:
     async def handle_status(self, request):
         """Handle status requests."""
         status = await self.get_status()
-        # Convert datetime objects to ISO strings for JSON serialization
-        status = self._serialize_datetime_objects(status)
-        return web.json_response(status)
+        return web.json_response(status, dumps=lambda obj: json.dumps(obj, cls=DateTimeEncoder))
     
     async def handle_health(self, request):
         """Health check endpoint."""
@@ -311,17 +315,6 @@ class MasterCoordinator:
             'work_units': len(self.work_queue)
         })
     
-    def _serialize_datetime_objects(self, obj):
-        """Convert datetime objects to ISO strings for JSON serialization."""
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        elif isinstance(obj, dict):
-            return {key: self._serialize_datetime_objects(value) for key, value in obj.items()}
-        elif isinstance(obj, list):
-            return [self._serialize_datetime_objects(item) for item in obj]
-        else:
-            return obj
-
     async def run(self):
         """Start the master coordinator server."""
         logger.info("Starting AQEA Master Coordinator")
