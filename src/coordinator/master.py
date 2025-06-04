@@ -80,8 +80,8 @@ class MasterCoordinator:
             raise ValueError(f"No configuration found for language: {self.language}")
         
         # Create work units based on alphabet ranges
-        ranges = lang_config.get('alphabet_ranges', [])
-        total_estimated = lang_config.get('estimated_entries', 100000)
+        ranges = lang_config.alphabet_ranges
+        total_estimated = lang_config.estimated_entries
         
         for i, range_config in enumerate(ranges):
             estimated_for_range = int(total_estimated * range_config.get('weight', 0.2))
@@ -271,7 +271,9 @@ class MasterCoordinator:
         
         work_unit = await self.assign_work(worker_id)
         if work_unit:
-            return web.json_response(asdict(work_unit))
+            work_data = asdict(work_unit)
+            work_data = self._serialize_datetime_objects(work_data)
+            return web.json_response(work_data)
         else:
             return web.json_response({'message': 'No work available'}, status=204)
     
@@ -296,6 +298,8 @@ class MasterCoordinator:
     async def handle_status(self, request):
         """Handle status requests."""
         status = await self.get_status()
+        # Convert datetime objects to ISO strings for JSON serialization
+        status = self._serialize_datetime_objects(status)
         return web.json_response(status)
     
     async def handle_health(self, request):
@@ -307,6 +311,17 @@ class MasterCoordinator:
             'work_units': len(self.work_queue)
         })
     
+    def _serialize_datetime_objects(self, obj):
+        """Convert datetime objects to ISO strings for JSON serialization."""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, dict):
+            return {key: self._serialize_datetime_objects(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._serialize_datetime_objects(item) for item in obj]
+        else:
+            return obj
+
     async def run(self):
         """Start the master coordinator server."""
         logger.info("Starting AQEA Master Coordinator")

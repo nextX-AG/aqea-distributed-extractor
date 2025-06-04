@@ -14,6 +14,7 @@ import socket
 
 from ..data_sources.factory import DataSourceFactory
 from ..aqea.converter import AQEAConverter
+from ..database import get_database
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class ExtractionWorker:
         self.is_running = False
         self.current_work = None
         self.session = None
+        self.database = None  # Supabase connection
         
         # Statistics
         self.total_processed = 0
@@ -148,8 +150,8 @@ class ExtractionWorker:
             # Create data source
             data_source = DataSourceFactory.create(source, self.config)
             
-            # Create AQEA converter
-            aqea_converter = AQEAConverter(self.config, language)
+            # Create AQEA converter with database connection
+            aqea_converter = AQEAConverter(self.config, language, self.database, self.worker_id)
             
             # Process entries in batches
             batch_size = 50
@@ -182,7 +184,12 @@ class ExtractionWorker:
                 
                 # Report progress periodically
                 if entries_processed - last_progress_report >= progress_report_interval:
+                    # Report to HTTP master
                     await self.report_progress(work_id, entries_processed, self.processing_rate)
+                    # Update database (if available)
+                    if self.database:
+                        await self.database.update_work_progress(work_id, entries_processed, self.processing_rate)
+                    
                     last_progress_report = entries_processed
                     
                     logger.info(f"Progress: {entries_processed} entries processed "
@@ -204,20 +211,33 @@ class ExtractionWorker:
             'processing_rate': self.processing_rate
         }
     
-    async def _store_entries(self, aqea_entries: List[Dict[str, Any]]):
-        """Store AQEA entries to the database or file system."""
-        # This would be implemented based on the storage backend
-        # For now, we'll just log the count
-        logger.debug(f"Storing {len(aqea_entries)} AQEA entries")
+    async def _store_entries(self, aqea_entries: List[Any]):
+        """Store AQEA entries to Supabase database or local placeholder."""
+        if not aqea_entries:
+            return {'inserted': 0, 'errors': []}
         
-        # In a real implementation, this would:
-        # 1. Connect to PostgreSQL database
-        # 2. Insert entries into the AQEA table
-        # 3. Handle conflicts and duplicates
-        # 4. Update indexes
-        
-        # Placeholder implementation
-        await asyncio.sleep(0.1)  # Simulate database write time
+        if self.database:
+            logger.debug(f"Storing {len(aqea_entries)} AQEA entries to Supabase")
+            
+            try:
+                # Store entries in Supabase
+                result = await self.database.store_aqea_entries(aqea_entries)
+                
+                if result['inserted'] > 0:
+                    logger.info(f"✅ Stored {result['inserted']} entries to Supabase (Success rate: {result['success_rate']:.1%})")
+                
+                if result['errors']:
+                    logger.warning(f"⚠️ {len(result['errors'])} errors occurred during storage")
+                    
+                return result
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to store entries to Supabase: {e}")
+                return {'inserted': 0, 'errors': [str(e)]}
+        else:
+            # In HTTP-only mode, just log the entries (for testing)
+            logger.info(f"📝 HTTP-only mode: Processed {len(aqea_entries)} AQEA entries (not stored to database)")
+            return {'inserted': len(aqea_entries), 'errors': []}
     
     async def work_loop(self):
         """Main work loop - request and process work units."""
@@ -232,13 +252,22 @@ class ExtractionWorker:
                     # Process the work unit
                     result = await self.process_work_unit(work_data)
                     
-                    # Report completion
+                    # Report completion to HTTP master
                     await self.report_completion(
                         result['work_id'],
                         result['success'],
                         result['entries_processed'],
                         result['errors']
                     )
+                    
+                    # Mark as completed in database (if available)
+                    if self.database:
+                        await self.database.complete_work_unit(
+                            result['work_id'],
+                            result['success'],
+                            result['entries_processed'],
+                            result['errors']
+                        )
                     
                     # Update statistics
                     self.total_processed += result['entries_processed']
@@ -254,12 +283,20 @@ class ExtractionWorker:
                 await asyncio.sleep(10)
     
     async def heartbeat_loop(self):
-        """Send periodic heartbeats to the master."""
+        """Send periodic heartbeats to the database (if available)."""
         while self.is_running:
             try:
-                # For now, heartbeats are sent via progress reports
-                # In a more sophisticated implementation, we might have
-                # a separate heartbeat endpoint
+                # Update worker status in Supabase database (if available)
+                if self.database:
+                    current_work_id = self.current_work['id'] if self.current_work else None
+                    status = 'working' if current_work_id else 'idle'
+                    
+                    await self.database.update_worker_heartbeat(
+                        self.worker_id, 
+                        status, 
+                        current_work_id
+                    )
+                
                 await asyncio.sleep(30)
                 
             except Exception as e:
@@ -275,12 +312,37 @@ class ExtractionWorker:
         # Create HTTP session
         self.session = ClientSession()
         
+        # Try to connect to Supabase database (optional for local testing)
         try:
-            # Register with master
+            self.database = await get_database(self.config)
+            if self.database and hasattr(self.database, 'pool') and self.database.pool:
+                logger.info("✅ Connected to Supabase database")
+            else:
+                raise Exception("Database connection returned None or invalid pool")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not connect to Supabase database: {e}")
+            logger.info("📝 Running in HTTP-only mode (no database integration)")
+            self.database = None
+        
+        try:
+            # Register with master (HTTP)
             registration_attempts = 5
             for attempt in range(registration_attempts):
-                if await self.register_with_master():
+                # Register with HTTP master
+                http_success = await self.register_with_master()
+                
+                # Register with Supabase database (if available)
+                db_success = True  # Default to success if no database
+                if self.database:
+                    db_success = await self.database.register_worker(self.worker_id, self.local_ip)
+                
+                if http_success and db_success:
+                    if self.database:
+                        logger.info(f"✅ Worker {self.worker_id} registered with master and database")
+                    else:
+                        logger.info(f"✅ Worker {self.worker_id} registered with master (HTTP-only mode)")
                     break
+                    
                 logger.warning(f"Registration attempt {attempt + 1} failed, retrying...")
                 await asyncio.sleep(5)
             else:
@@ -290,11 +352,15 @@ class ExtractionWorker:
             self.is_running = True
             self.start_time = datetime.now()
             
-            # Run work and heartbeat loops concurrently
-            await asyncio.gather(
-                self.work_loop(),
-                self.heartbeat_loop()
-            )
+            # Run work loop and heartbeat loop (if database available)
+            if self.database:
+                await asyncio.gather(
+                    self.work_loop(),
+                    self.heartbeat_loop()
+                )
+            else:
+                # HTTP-only mode: just run work loop
+                await self.work_loop()
             
         except KeyboardInterrupt:
             logger.info(f"Worker {self.worker_id} interrupted")

@@ -7,19 +7,21 @@ Generates unique AQEA addresses and manages element ID allocation.
 import asyncio
 import hashlib
 import logging
-from typing import Dict, Any, Set
+from typing import Dict, Any, Set, Optional
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
 
 class AddressGenerator:
-    """Generates unique AQEA addresses."""
+    """Generates unique AQEA addresses with database coordination."""
     
-    def __init__(self, language: str):
+    def __init__(self, language: str, database=None, worker_id: str = None):
         self.language = language
+        self.database = database  # Supabase database connection
+        self.worker_id = worker_id or 'unknown'
         
-        # Track allocated addresses: {(aa, qq, ee): {a2_values}}
+        # Local cache for allocated addresses: {(aa, qq, ee): {a2_values}}
         self.allocated_addresses: Dict[tuple, Set[int]] = defaultdict(set)
         
         # Cache word to address mappings for consistency
@@ -29,7 +31,8 @@ class AddressGenerator:
         self.stats = {
             'total_generated': 0,
             'collisions_resolved': 0,
-            'cache_hits': 0
+            'cache_hits': 0,
+            'database_allocations': 0
         }
         
     async def get_next_element_id(self, aa: int, qq: int, ee: int, word: str) -> int:
@@ -50,7 +53,18 @@ class AddressGenerator:
         if base_id >= 0xFE:
             base_id = base_id % 0xFE
         
+        category_key_str = f"{aa:02X}:{qq:02X}:{ee:02X}"
         category_key = (aa, qq, ee)
+        
+        # Load allocated addresses from database if connected
+        if self.database and category_key not in self.allocated_addresses:
+            try:
+                db_allocated = await self.database.get_allocated_addresses(category_key_str)
+                self.allocated_addresses[category_key] = set(db_allocated)
+                logger.debug(f"Loaded {len(db_allocated)} allocated addresses for {category_key_str}")
+            except Exception as e:
+                logger.warning(f"Failed to load allocated addresses from database: {e}")
+        
         allocated = self.allocated_addresses[category_key]
         
         # Find next available ID
@@ -67,7 +81,22 @@ class AddressGenerator:
             logger.warning(f"Category {aa:02X}:{qq:02X}:{ee:02X} is full, using overflow")
             element_id = self._handle_overflow(category_key)
         
-        # Mark as allocated
+        # Try to allocate in database first (prevents conflicts between workers)
+        if self.database:
+            try:
+                allocation_success = await self.database.allocate_address(
+                    category_key_str, element_id, self.worker_id, word
+                )
+                if allocation_success:
+                    self.stats['database_allocations'] += 1
+                    logger.debug(f"✅ Allocated {category_key_str}:{element_id:02X} in database")
+                else:
+                    # Address was already allocated by another worker, try next
+                    return await self._find_alternative_address(aa, qq, ee, word, element_id)
+            except Exception as e:
+                logger.warning(f"Database allocation failed: {e}")
+        
+        # Mark as allocated locally
         allocated.add(element_id)
         
         # Cache the mapping
@@ -82,6 +111,54 @@ class AddressGenerator:
         logger.debug(f"Generated element ID {element_id:02X} for '{word}' in category {aa:02X}:{qq:02X}:{ee:02X}")
         
         return element_id
+    
+    async def _find_alternative_address(self, aa: int, qq: int, ee: int, word: str, 
+                                      conflicted_id: int) -> int:
+        """Find alternative address when database allocation fails."""
+        category_key_str = f"{aa:02X}:{qq:02X}:{ee:02X}"
+        category_key = (aa, qq, ee)
+        
+        # Reload allocated addresses from database
+        try:
+            db_allocated = await self.database.get_allocated_addresses(category_key_str)
+            self.allocated_addresses[category_key] = set(db_allocated)
+        except Exception as e:
+            logger.warning(f"Failed to reload allocated addresses: {e}")
+        
+        allocated = self.allocated_addresses[category_key]
+        
+        # Find next available ID starting from conflicted_id + 1
+        element_id = (conflicted_id + 1) % 0xFE
+        attempts = 0
+        max_attempts = 254  # All possible values 1-254
+        
+        while element_id in allocated and attempts < max_attempts:
+            element_id = (element_id + 1) % 0xFE
+            if element_id == 0:  # Skip 0x00
+                element_id = 1
+            attempts += 1
+        
+        if attempts >= max_attempts:
+            logger.error(f"Category {category_key_str} is completely full!")
+            # Use overflow strategy
+            return self._handle_overflow(category_key)
+        
+        # Try to allocate the new ID
+        try:
+            allocation_success = await self.database.allocate_address(
+                category_key_str, element_id, self.worker_id, word
+            )
+            if allocation_success:
+                self.stats['database_allocations'] += 1
+                self.stats['collisions_resolved'] += 1
+                logger.debug(f"✅ Found alternative address {category_key_str}:{element_id:02X}")
+                return element_id
+            else:
+                # Still conflicts, recursive retry
+                return await self._find_alternative_address(aa, qq, ee, word, element_id)
+        except Exception as e:
+            logger.error(f"Failed to allocate alternative address: {e}")
+            return element_id  # Fall back to local allocation
     
     def _handle_overflow(self, category_key: tuple) -> int:
         """Handle overflow when a category is full."""

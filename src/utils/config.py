@@ -75,9 +75,9 @@ class Config:
         self.cloud_providers: Dict[str, CloudProviderConfig] = {}
         
         # Load configuration
-        self.load()
+        self._load_config()
     
-    def load(self):
+    def _load_config(self):
         """Load configuration from file and environment variables."""
         # Load from file
         if os.path.exists(self.config_file):

@@ -81,10 +81,10 @@ class AQEAConverter:
         'general': 0x01
     }
     
-    def __init__(self, config: Dict[str, Any], language: str):
+    def __init__(self, config: Dict[str, Any], language: str, database=None, worker_id: str = None):
         self.config = config
         self.language = language.lower()
-        self.address_generator = AddressGenerator(language)
+        self.address_generator = AddressGenerator(language, database, worker_id)
         
         # Validate language support
         if self.language not in self.LANGUAGE_DOMAINS:
