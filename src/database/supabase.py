@@ -66,10 +66,18 @@ class SupabaseDatabase:
         try:
             # Convert entries to database format
             entries_data = []
+            unique_addresses = set()  # Track unique addresses to avoid duplicates in a batch
+            
             for entry in entries:
                 try:
+                    # Skip duplicate addresses in the same batch
+                    if entry.address in unique_addresses:
+                        logger.debug(f"Skipping duplicate address in batch: {entry.address}")
+                        continue
+                        
                     entry_data = self._aqea_entry_to_db_dict(entry)
                     entries_data.append(entry_data)
+                    unique_addresses.add(entry.address)
                 except Exception as e:
                     error_msg = f"Failed to convert entry {entry.address}: {str(e)}"
                     errors.append(error_msg)
@@ -77,18 +85,29 @@ class SupabaseDatabase:
                     continue
             
             if entries_data:
-                # Batch insert with upsert
-                result = self.client.table('aqea_entries').upsert(
-                    entries_data,
-                    on_conflict='address'
-                ).execute()
-                
-                inserted = len(result.data) if result.data else len(entries_data)
-                logger.info(f"✅ Stored {inserted} AQEA entries to Supabase")
+                # Process in smaller batches to avoid DB errors
+                batch_size = 10
+                for i in range(0, len(entries_data), batch_size):
+                    batch = entries_data[i:i+batch_size]
+                    try:
+                        # Batch insert with upsert
+                        result = self.client.table('aqea_entries').upsert(
+                            batch,
+                            on_conflict='address'
+                        ).execute()
+                        
+                        batch_inserted = len(result.data) if result.data else len(batch)
+                        inserted += batch_inserted
+                        logger.info(f"✅ Stored batch of {batch_inserted} AQEA entries to Supabase")
+                    except Exception as e:
+                        batch_error = f"Batch insert error (batch {i//batch_size+1}): {str(e)}"
+                        errors.append(batch_error)
+                        logger.error(f"❌ {batch_error}")
+                        continue
                     
         except Exception as e:
-            logger.error(f"❌ Batch insert failed: {e}")
-            errors.append(f"Batch insert error: {str(e)}")
+            logger.error(f"❌ Batch insert process failed: {e}")
+            errors.append(f"Batch insert process error: {str(e)}")
         
         return {
             'inserted': inserted,
