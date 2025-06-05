@@ -360,10 +360,10 @@ class ExtractionWorker:
             # Try to connect to Supabase database (optional for local testing)
             try:
                 self.database = await get_database(self.config)
-                if self.database and hasattr(self.database, 'pool') and self.database.pool:
+                if self.database and hasattr(self.database, 'client') and self.database.client:
                     logger.info("✅ Connected to Supabase database")
                 else:
-                    raise Exception("Database connection returned None or invalid pool")
+                    raise Exception("Database connection returned None or invalid client")
             except Exception as e:
                 logger.warning(f"⚠️ Could not connect to Supabase database: {e}")
                 logger.info("📝 Running in HTTP-only mode (no database integration)")
