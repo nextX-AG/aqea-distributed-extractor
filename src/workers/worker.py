@@ -235,9 +235,43 @@ class ExtractionWorker:
                 logger.error(f"❌ Failed to store entries to Supabase: {e}")
                 return {'inserted': 0, 'errors': [str(e)]}
         else:
-            # In HTTP-only mode, just log the entries (for testing)
-            logger.info(f"📝 HTTP-only mode: Processed {len(aqea_entries)} AQEA entries (not stored to database)")
-            return {'inserted': len(aqea_entries), 'errors': []}
+            # Fallback: Store to local JSON files
+            try:
+                import os
+                import json
+                from datetime import datetime
+                
+                # Create output directory
+                output_dir = "extracted_data"
+                os.makedirs(output_dir, exist_ok=True)
+                
+                # Create filename with timestamp and worker ID
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{output_dir}/aqea_entries_{self.worker_id}_{timestamp}.json"
+                
+                # Convert entries to dict format
+                entries_data = []
+                for entry in aqea_entries:
+                    if hasattr(entry, 'to_dict'):
+                        entries_data.append(entry.to_dict())
+                    else:
+                        entries_data.append(entry)
+                
+                # Write to JSON file
+                with open(filename, 'w', encoding='utf-8') as f:
+                    json.dump({
+                        'worker_id': self.worker_id,
+                        'timestamp': datetime.now().isoformat(),
+                        'entry_count': len(entries_data),
+                        'entries': entries_data
+                    }, f, ensure_ascii=False, indent=2)
+                
+                logger.info(f"💾 Stored {len(aqea_entries)} AQEA entries to local file: {filename}")
+                return {'inserted': len(aqea_entries), 'errors': []}
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to store entries to local file: {e}")
+                return {'inserted': 0, 'errors': [str(e)]}
     
     async def work_loop(self):
         """Main work loop - request and process work units."""

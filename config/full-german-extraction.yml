@@ -1,0 +1,236 @@
+# AQEA Distributed Extractor - Full German Wiktionary Extraction
+# Optimized configuration for complete German dictionary processing
+
+# Database Configuration
+database:
+  host: localhost
+  port: 5432
+  database: aqea
+  username: aqea
+  password: aqea
+  pool_size: 20
+
+# Language Configuration - OPTIMIZED FOR FULL GERMAN EXTRACTION
+languages:
+  de:
+    name: "German"
+    estimated_entries: 800000
+    # FINE-GRAINED ALPHABET SPLITTING - 26 Work Units for optimal parallelization
+    alphabet_ranges:
+      # A-Series: High volume letters
+      - start: "A"
+        end: "Ab"
+        weight: 0.04
+      - start: "Ac"
+        end: "Al"
+        weight: 0.04
+      - start: "Am"
+        end: "An"
+        weight: 0.04
+      - start: "Ao"
+        end: "Az"
+        weight: 0.04
+      # B-Series
+      - start: "B"
+        end: "Be"
+        weight: 0.04
+      - start: "Bf"
+        end: "Bz"
+        weight: 0.03
+      # C-Series
+      - start: "C"
+        end: "Cz"
+        weight: 0.02
+      # D-Series  
+      - start: "D"
+        end: "De"
+        weight: 0.04
+      - start: "Df"
+        end: "Dz"
+        weight: 0.03
+      # E-Series
+      - start: "E"
+        end: "En"
+        weight: 0.04
+      - start: "Eo"
+        end: "Ez"
+        weight: 0.03
+      # F-Series
+      - start: "F"
+        end: "Fe"
+        weight: 0.03
+      - start: "Ff"
+        end: "Fz"
+        weight: 0.03
+      # G-Series
+      - start: "G"
+        end: "Ge"
+        weight: 0.04
+      - start: "Gf"
+        end: "Gz"
+        weight: 0.03
+      # H-Series
+      - start: "H"
+        end: "He"
+        weight: 0.04
+      - start: "Hf"
+        end: "Hz"
+        weight: 0.03
+      # I-Series
+      - start: "I"
+        end: "In"
+        weight: 0.03
+      - start: "Io"
+        end: "Iz"
+        weight: 0.02
+      # J-Series
+      - start: "J"
+        end: "Jz"
+        weight: 0.02
+      # K-Series
+      - start: "K"
+        end: "Ko"
+        weight: 0.04
+      - start: "Kp"
+        end: "Kz"
+        weight: 0.03
+      # L-Series
+      - start: "L"
+        end: "Le"
+        weight: 0.03
+      - start: "Lf"
+        end: "Lz"
+        weight: 0.03
+      # M-Series
+      - start: "M"
+        end: "Me"
+        weight: 0.04
+      - start: "Mf"
+        end: "Mz"
+        weight: 0.03
+      # N-Series
+      - start: "N"
+        end: "Nz"
+        weight: 0.03
+      # O-Series
+      - start: "O"
+        end: "Oz"
+        weight: 0.03
+      # P-Series
+      - start: "P"
+        end: "Po"
+        weight: 0.04
+      - start: "Pp"
+        end: "Pz"
+        weight: 0.03
+      # Q-Series
+      - start: "Q"
+        end: "Qz"
+        weight: 0.01
+      # R-Series
+      - start: "R"
+        end: "Re"
+        weight: 0.03
+      - start: "Rf"
+        end: "Rz"
+        weight: 0.03
+      # S-Series: High volume
+      - start: "S"
+        end: "Sc"
+        weight: 0.04
+      - start: "Sd"
+        end: "Sm"
+        weight: 0.04
+      - start: "Sn"
+        end: "St"
+        weight: 0.04
+      - start: "Su"
+        end: "Sz"
+        weight: 0.04
+      # T-Series
+      - start: "T"
+        end: "Tz"
+        weight: 0.04
+      # U-Series
+      - start: "U"
+        end: "Un"
+        weight: 0.03
+      - start: "Uo"
+        end: "Uz"
+        weight: 0.03
+      # V-Series
+      - start: "V"
+        end: "Vo"
+        weight: 0.03
+      - start: "Vp"
+        end: "Vz"
+        weight: 0.02
+      # W-Series
+      - start: "W"
+        end: "We"
+        weight: 0.03
+      - start: "Wf"
+        end: "Wz"
+        weight: 0.03
+      # X-Series
+      - start: "X"
+        end: "Xz"
+        weight: 0.01
+      # Y-Series
+      - start: "Y"
+        end: "Yz"
+        weight: 0.01
+      # Z-Series
+      - start: "Z"
+        end: "Zz"
+        weight: 0.02
+
+    supported_pos: ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection"]
+    frequency_threshold: 1
+
+# Cloud Provider Configuration - OPTIMIZED FOR LARGE EXTRACTION
+cloud_providers:
+  hetzner:
+    name: "Hetzner Cloud"
+    master_instance_type: "cx32"  # Larger master for coordination
+    worker_instance_type: "cx21"  # More powerful workers
+    cost_per_hour: 0.025
+    max_workers: 50  # Support up to 50 workers
+    regions: ["nbg1", "fsn1", "hel1"]
+
+# Data Source Configuration - OPTIMIZED FOR HIGH VOLUME
+data_sources:
+  wiktionary:
+    request_delay: 0.1  # Faster requests (100ms instead of 200ms)
+    batch_size: 100     # Larger batches for efficiency
+    max_retries: 5      # More retries for stability
+    timeout: 60         # Longer timeout for complex pages
+    max_concurrent_requests: 10  # Parallel requests per worker
+    base_urls:
+      de: "https://de.wiktionary.org/w/api.php"
+
+# Extraction Settings - OPTIMIZED FOR PRODUCTION
+extraction:
+  default_batch_size: 100
+  progress_report_interval: 50   # Report every 50 entries
+  max_definitions: 5             # More definitions for completeness
+  max_forms: 10                  # More forms for completeness
+  enable_audio: true             # Include audio files
+  enable_etymology: true         # Include etymology
+  enable_synonyms: true          # Include synonyms
+  enable_antonyms: true          # Include antonyms
+  
+# Worker Configuration - HIGH PERFORMANCE
+worker:
+  max_memory_mb: 2048    # 2GB memory per worker
+  max_cpu_percent: 80    # Use up to 80% CPU
+  heartbeat_interval: 30 # Heartbeat every 30 seconds
+  timeout_minutes: 60    # 1 hour timeout per work unit
+
+# Master Configuration - COORDINATION OPTIMIZED  
+master:
+  max_workers: 50              # Support up to 50 workers
+  work_assignment_timeout: 300 # 5 minutes to assign work
+  progress_report_interval: 10 # Progress report every 10 seconds
+  auto_scaling: true           # Enable auto-scaling
+  max_retries_per_unit: 3      # Retry failed units up to 3 times 
