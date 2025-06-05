@@ -374,13 +374,16 @@ class ExtractionWorker:
                     current_work_id = self.current_work['id'] if self.current_work else None
                     status = 'working' if current_work_id else 'idle'
                     
+                    logger.debug(f"Sending heartbeat: {self.worker_id}, {status}, {current_work_id}")
                     success = await self.database.update_worker_heartbeat(
                         self.worker_id, 
                         status, 
                         current_work_id
                     )
                     
-                    if not success:
+                    if success:
+                        logger.debug(f"Heartbeat updated successfully")
+                    else:
                         logger.warning("⚠️ Failed to update heartbeat in database")
                 
                 await asyncio.sleep(30)

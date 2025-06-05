@@ -62,9 +62,17 @@ class AddressGenerator:
         except Exception as e:
             logger.warning(f"Failed to reload allocated addresses: {e}")
         
-    async def get_next_element_id(self, aa: int, qq: int, ee: int, word: str) -> int:
-        """Get next available element ID (A2 byte) for the given category."""
-        # Check cache first
+    async def get_next_element_id(self, aa: int, qq: int, ee: int, word: str, suggested_a2: int = None) -> int:
+        """Get next available element ID (A2 byte) for the given category.
+        
+        Args:
+            aa: Domain byte (language)
+            qq: Category byte (POS)
+            ee: Subcategory byte
+            word: The word being processed
+            suggested_a2: Optional suggested A2 value (from calling code)
+        """
+        # Check cache first to ensure consistency
         cache_key = f"{aa:02X}:{qq:02X}:{ee:02X}:{word}"
         if cache_key in self.word_to_address:
             self.stats['cache_hits'] += 1
@@ -72,13 +80,17 @@ class AddressGenerator:
             cached_address = self.word_to_address[cache_key]
             return int(cached_address.split(':')[-1], 16)
         
-        # Generate deterministic starting point based on word
-        word_hash = hashlib.md5(word.encode('utf-8')).hexdigest()
-        base_id = int(word_hash[:2], 16)
-        
-        # Ensure we don't use reserved values (0xFE, 0xFF)
-        if base_id >= 0xFE:
-            base_id = base_id % 0xFE
+        # Use suggested A2 if provided, otherwise generate one based on word
+        if suggested_a2 is not None and 0 < suggested_a2 < 0xFE:
+            base_id = suggested_a2
+        else:
+            # Generate deterministic starting point based on word
+            word_hash = hashlib.md5(word.encode('utf-8')).hexdigest()
+            base_id = int(word_hash[:2], 16)
+            
+            # Ensure we don't use reserved values (0xFE, 0xFF)
+            if base_id >= 0xFE:
+                base_id = base_id % 0xFE
         
         category_key = (aa, qq, ee)
         category_key_str = f"{aa:02X}:{qq:02X}:{ee:02X}"

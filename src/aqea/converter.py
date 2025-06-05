@@ -148,11 +148,19 @@ class AQEAConverter:
             # Subcategory byte (EE) - Semantic category
             ee = self._determine_semantic_category(entry)
             
+            # Erstelle einen eindeutigeren Hash-basierten Seed für dieses Wort
+            # Berücksichtige mehr Merkmale als nur das Wort selbst
+            seed_text = f"{word}|{pos}|{entry.get('language', self.language)}|{','.join(entry.get('definitions', [])[:1])}"
+            hash_obj = hashlib.md5(seed_text.encode('utf-8'))
+            hash_int = int(hash_obj.hexdigest(), 16)
+            suggested_a2 = (hash_int % 250) + 1  # Werte zwischen 1-250, vermeide 0, 0xFF
+            
             # Element byte (A2) - Unique identifier within subcategory
-            a2 = await self.address_generator.get_next_element_id(aa, qq, ee, word)
+            a2 = await self.address_generator.get_next_element_id(aa, qq, ee, word, suggested_a2)
             
             # Format as hex string
             address = f"0x{aa:02X}:{qq:02X}:{ee:02X}:{a2:02X}"
+            logger.debug(f"Generated address {address} for '{word}' (pos={pos}, ee={ee:02X}, a2={a2:02X})")
             return address
             
         except Exception as e:

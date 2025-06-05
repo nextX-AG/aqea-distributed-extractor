@@ -391,11 +391,25 @@ class SupabaseDatabase:
             return False
             
         try:
-            self.client.table('worker_status').update({
+            result = self.client.table('worker_status').update({
                 'status': status,
                 'current_work_id': current_work_id,
                 'last_heartbeat': datetime.now().isoformat()
             }).eq('worker_id', worker_id).execute()
+            
+            # Prüfe, ob das Update erfolgreich war
+            if not result.data or len(result.data) == 0:
+                # Worker existiert möglicherweise nicht in der Datenbank, versuche erneut zu registrieren
+                logger.warning(f"Worker {worker_id} heartbeat failed, trying to re-register")
+                
+                # Füge den Worker neu ein, falls er nicht existiert
+                self.client.table('worker_status').upsert({
+                    'worker_id': worker_id,
+                    'status': status,
+                    'current_work_id': current_work_id,
+                    'last_heartbeat': datetime.now().isoformat(),
+                    'registered_at': datetime.now().isoformat()
+                }, on_conflict='worker_id').execute()
             
             return True
                 
