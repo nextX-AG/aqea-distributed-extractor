@@ -169,12 +169,26 @@ class ExtractionWorker:
                         if aqea_entry:
                             aqea_entries.append(aqea_entry)
                     except Exception as e:
-                        errors.append(f"Conversion error for {entry.get('word', 'unknown')}: {str(e)}")
+                        error_msg = f"Conversion error for {entry.get('word', 'unknown')}: {str(e)}"
+                        errors.append(error_msg)
+                        logger.warning(error_msg)
                         continue
                 
                 # Store entries (database, file, etc.)
                 if aqea_entries:
-                    await self._store_entries(aqea_entries)
+                    logger.info(f"Storing batch of {len(aqea_entries)} entries to database")
+                    storage_result = await self._store_entries(aqea_entries)
+                    
+                    if storage_result['inserted'] > 0:
+                        logger.info(f"Successfully stored {storage_result['inserted']} entries")
+                    else:
+                        logger.warning("No entries were stored in this batch")
+                        
+                    if storage_result['errors']:
+                        for err in storage_result['errors'][:5]:  # Log first 5 errors
+                            logger.warning(f"Storage error: {err}")
+                        if len(storage_result['errors']) > 5:
+                            logger.warning(f"... and {len(storage_result['errors']) - 5} more errors")
                 
                 entries_processed += len(batch)
                 
@@ -216,6 +230,7 @@ class ExtractionWorker:
         if not aqea_entries:
             return {'inserted': 0, 'errors': []}
         
+        # Always try database first
         if self.database:
             logger.debug(f"Storing {len(aqea_entries)} AQEA entries to Supabase")
             
@@ -225,53 +240,75 @@ class ExtractionWorker:
                 
                 if result['inserted'] > 0:
                     logger.info(f"✅ Stored {result['inserted']} entries to Supabase (Success rate: {result['success_rate']:.1%})")
+                else:
+                    logger.warning(f"⚠️ No entries were inserted into Supabase")
                 
                 if result['errors']:
                     logger.warning(f"⚠️ {len(result['errors'])} errors occurred during storage")
+                    
+                # If insertion failed completely, fall back to local storage
+                if result['inserted'] == 0:
+                    logger.warning("Falling back to local file storage due to database insertion failure")
+                    return await self._store_entries_local(aqea_entries)
                     
                 return result
                 
             except Exception as e:
                 logger.error(f"❌ Failed to store entries to Supabase: {e}")
-                return {'inserted': 0, 'errors': [str(e)]}
+                logger.warning("Falling back to local file storage due to database exception")
+                return await self._store_entries_local(aqea_entries)
         else:
-            # Fallback: Store to local JSON files
-            try:
-                import os
-                import json
-                from datetime import datetime
-                
-                # Create output directory
-                output_dir = "extracted_data"
-                os.makedirs(output_dir, exist_ok=True)
-                
-                # Create filename with timestamp and worker ID
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"{output_dir}/aqea_entries_{self.worker_id}_{timestamp}.json"
-                
-                # Convert entries to dict format
-                entries_data = []
-                for entry in aqea_entries:
-                    if hasattr(entry, 'to_dict'):
-                        entries_data.append(entry.to_dict())
+            # No database available, use local storage
+            return await self._store_entries_local(aqea_entries)
+            
+    async def _store_entries_local(self, aqea_entries: List[Any]):
+        """Store entries to local JSON file as fallback."""
+        try:
+            import os
+            import json
+            from datetime import datetime
+            
+            # Create output directory
+            output_dir = "extracted_data"
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Create filename with timestamp and worker ID
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{output_dir}/aqea_entries_{self.worker_id}_{timestamp}.json"
+            
+            # Convert entries to dict format
+            entries_data = []
+            for entry in aqea_entries:
+                if hasattr(entry, 'to_dict'):
+                    entries_data.append(entry.to_dict())
+                else:
+                    # If to_dict not available, convert to dictionary manually
+                    if hasattr(entry, '__dict__'):
+                        entry_dict = entry.__dict__.copy()
+                        # Convert datetime objects to ISO format strings
+                        for key, value in entry_dict.items():
+                            if isinstance(value, datetime):
+                                entry_dict[key] = value.isoformat()
+                        entries_data.append(entry_dict)
                     else:
-                        entries_data.append(entry)
-                
-                # Write to JSON file
-                with open(filename, 'w', encoding='utf-8') as f:
-                    json.dump({
-                        'worker_id': self.worker_id,
-                        'timestamp': datetime.now().isoformat(),
-                        'entry_count': len(entries_data),
-                        'entries': entries_data
-                    }, f, ensure_ascii=False, indent=2)
-                
-                logger.info(f"💾 Stored {len(aqea_entries)} AQEA entries to local file: {filename}")
-                return {'inserted': len(aqea_entries), 'errors': []}
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to store entries to local file: {e}")
-                return {'inserted': 0, 'errors': [str(e)]}
+                        # Last resort
+                        entries_data.append(str(entry))
+            
+            # Write to JSON file
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'worker_id': self.worker_id,
+                    'timestamp': datetime.now().isoformat(),
+                    'entry_count': len(entries_data),
+                    'entries': entries_data
+                }, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"💾 Stored {len(aqea_entries)} AQEA entries to local file: {filename}")
+            return {'inserted': len(aqea_entries), 'errors': []}
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to store entries to local file: {e}")
+            return {'inserted': 0, 'errors': [str(e)]}
     
     async def work_loop(self):
         """Main work loop - request and process work units."""
@@ -323,14 +360,28 @@ class ExtractionWorker:
             try:
                 # Update worker status in Supabase database (if available)
                 if self.database:
+                    # Ensure database is still connected
+                    if not self.database.client:
+                        logger.warning("⚠️ Database client lost connection in heartbeat, reconnecting...")
+                        try:
+                            self.database = await get_database(self.config)
+                            if not self.database or not self.database.client:
+                                logger.error("❌ Failed to reconnect to database")
+                        except Exception as reconnect_error:
+                            logger.error(f"❌ Error reconnecting to database: {reconnect_error}")
+                    
+                    # Update heartbeat
                     current_work_id = self.current_work['id'] if self.current_work else None
                     status = 'working' if current_work_id else 'idle'
                     
-                    await self.database.update_worker_heartbeat(
+                    success = await self.database.update_worker_heartbeat(
                         self.worker_id, 
                         status, 
                         current_work_id
                     )
+                    
+                    if not success:
+                        logger.warning("⚠️ Failed to update heartbeat in database")
                 
                 await asyncio.sleep(30)
                 
@@ -361,7 +412,12 @@ class ExtractionWorker:
             try:
                 self.database = await get_database(self.config)
                 if self.database and hasattr(self.database, 'client') and self.database.client:
-                    logger.info("✅ Connected to Supabase database")
+                    # Test connection with a simple query
+                    test_result = await self.database.get_extraction_statistics()
+                    if test_result:
+                        logger.info("✅ Connected to Supabase database successfully")
+                    else:
+                        raise Exception("Database connection test failed")
                 else:
                     raise Exception("Database connection returned None or invalid client")
             except Exception as e:
