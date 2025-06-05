@@ -364,10 +364,10 @@ class ExtractionWorker:
             
             # Run work loop and heartbeat loop (if database available)
             if self.database:
-            await asyncio.gather(
-                self.work_loop(),
-                self.heartbeat_loop()
-            )
+                await asyncio.gather(
+                    self.work_loop(),
+                    self.heartbeat_loop()
+                )
             else:
                 # HTTP-only mode: just run work loop
                 await self.work_loop()
