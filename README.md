@@ -157,7 +157,7 @@ curl http://localhost:8080/api/status | python -m json.tool
 ```json
 {
   "overview": {
-    "language": "de",
+  "language": "de",
     "status": "running",
     "workers_expected": 2,
     "workers_connected": 2

@@ -1,0 +1,78 @@
+#cloud-config
+
+# AQEA Distributed Extractor - Master Node Cloud Init Config
+# Automatische Einrichtung für Hetzner Cloud Server
+
+# Benutzer erstellen
+users:
+  - name: aqea
+    groups: users, admin
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMzTF+1sFTA5S8nP72t+LhFO3suRHz7ds9BB9jrkG+3g sayedamirkarim@MBP-von-Sayed.fritz.box
+
+# Pakete installieren und aktualisieren
+packages:
+  - python3.11
+  - python3.11-venv
+  - python3-pip
+  - git
+  - fail2ban
+  - ufw
+  - htop
+  - tmux
+  - curl
+  - unzip
+package_update: true
+package_upgrade: true
+
+# Befehle ausführen
+runcmd:
+  # Fail2ban konfigurieren
+  - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - systemctl enable fail2ban
+  
+  # Firewall konfigurieren - Master braucht Port 8080 offen
+  - ufw allow 22/tcp
+  - ufw allow 8080/tcp
+  - ufw --force enable
+  
+  # SSH abhärten
+  - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)PasswordAuthentication/s/^.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)MaxAuthTries/s/^.*$/MaxAuthTries 3/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AllowTcpForwarding/s/^.*$/AllowTcpForwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)X11Forwarding/s/^.*$/X11Forwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AllowAgentForwarding/s/^.*$/AllowAgentForwarding no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
+  - sed -i '$a AllowUsers aqea' /etc/ssh/sshd_config
+  
+  # AQEA Verzeichnisstruktur erstellen
+  - mkdir -p /opt/aqea-distributed-extractor
+  - chown -R aqea:aqea /opt/aqea-distributed-extractor
+  
+  # Git Repository klonen
+  - su - aqea -c "git clone https://github.com/nextX-AG/aqea-distributed-extractor.git /opt/aqea-distributed-extractor"
+  
+  # Python virtuelle Umgebung einrichten
+  - su - aqea -c "cd /opt/aqea-distributed-extractor && python3.11 -m venv aqea-venv"
+  - su - aqea -c "cd /opt/aqea-distributed-extractor && source aqea-venv/bin/activate && pip install -r requirements.txt"
+  
+  # Systemd Service Dateien installieren
+  - cp /opt/aqea-distributed-extractor/scripts/deployment/aqea-master.service /etc/systemd/system/
+  - systemctl daemon-reload
+  
+  # Log-Verzeichnis erstellen
+  - mkdir -p /var/log/aqea
+  - chown -R aqea:aqea /var/log/aqea
+  
+  # Logrotate konfigurieren
+  - echo -e "/var/log/aqea/*.log {\n  daily\n  rotate 7\n  compress\n  delaycompress\n  missingok\n  notifempty\n  create 0640 aqea aqea\n}" > /etc/logrotate.d/aqea
+  
+  # Master-Service automatisch starten
+  - systemctl enable aqea-master
+  - systemctl start aqea-master
+  
+  # System neu starten
+  - reboot 

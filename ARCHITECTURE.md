@@ -1,6 +1,6 @@
 # 🏗️ AQEA Distributed Extractor - Architecture
 
-> **Universal Language Data Extraction at Scale**  
+> **Universal Language Data Extraction at Scale**
 > **🎉 STATUS: VOLLSTÄNDIG FUNKTIONSFÄHIG** ✅
 > 
 > Ein distributed System für die Extraktion von Sprachdaten aus mehreren Quellen (Wiktionary, PanLex, etc.) und Konvertierung in das **AQEA 4-byte addressing format** für universelle Wissensrepräsentation.

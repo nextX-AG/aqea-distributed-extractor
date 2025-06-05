@@ -47,19 +47,19 @@ class WiktionaryDataSource:
         """Test extraction of a small number of entries."""
         async with ClientSession() as session:
             self.session = session
-            results = []
-            test_words = ['water', 'house', 'run', 'good', 'time']
-            
-            for word in test_words[:count]:
-                try:
-                    entry = await self._extract_single_entry('en', word)
-                    if entry:
-                        results.append(entry)
-                except Exception as e:
-                    logger.warning(f"Failed to extract test word '{word}': {e}")
-            
+        results = []
+        test_words = ['water', 'house', 'run', 'good', 'time']
+        
+        for word in test_words[:count]:
+            try:
+                entry = await self._extract_single_entry('en', word)
+                if entry:
+                    results.append(entry)
+            except Exception as e:
+                logger.warning(f"Failed to extract test word '{word}': {e}")
+        
             self.session = None
-            return results
+        return results
     
     async def extract_range(self, language: str, start_range: str, end_range: str, 
                           batch_size: int = 50) -> AsyncGenerator[List[Dict[str, Any]], None]:
