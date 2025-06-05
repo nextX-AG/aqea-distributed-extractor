@@ -11,6 +11,10 @@ import logging
 import sys
 from pathlib import Path
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 from .coordinator.master import MasterCoordinator
 from .workers.worker import ExtractionWorker
 from .utils.config import Config
