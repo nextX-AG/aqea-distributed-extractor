@@ -79,80 +79,28 @@ class ColoredFormatter(logging.Formatter):
         return formatted
 
 
-def setup_logging(
-    level: int = logging.INFO,
-    log_file: Optional[str] = None,
-    json_format: bool = False,
-    console_output: bool = True,
-    max_file_size: int = 10 * 1024 * 1024,  # 10MB
-    backup_count: int = 5
-) -> None:
-    """
-    Setup logging configuration.
+def setup_logging(level = "DEBUG"):
+    """Configure logging with colored output."""
+    # Convert string level to logging level
+    if isinstance(level, int):
+        numeric_level = level
+    else:
+        numeric_level = getattr(logging, level.upper(), None)
+        if not isinstance(numeric_level, int):
+            raise ValueError(f"Invalid log level: {level}")
     
-    Args:
-        level: Logging level
-        log_file: Path to log file (optional)
-        json_format: Use JSON format for logs
-        console_output: Enable console output
-        max_file_size: Maximum log file size before rotation
-        backup_count: Number of backup files to keep
-    """
-    # Create root logger
-    root_logger = logging.getLogger()
-    root_logger.setLevel(level)
+    # Setup basic configuration
+    logging.basicConfig(
+        level=numeric_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        stream=sys.stdout
+    )
     
-    # Clear any existing handlers
-    root_logger.handlers.clear()
-    
-    # Console handler
-    if console_output:
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(level)
-        
-        if json_format:
-            console_formatter = JSONFormatter()
-        else:
-            console_formatter = ColoredFormatter(
-                fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            )
-        
-        console_handler.setFormatter(console_formatter)
-        root_logger.addHandler(console_handler)
-    
-    # File handler
-    if log_file:
-        # Create log directory if it doesn't exist
-        Path(log_file).parent.mkdir(parents=True, exist_ok=True)
-        
-        # Use rotating file handler
-        file_handler = logging.handlers.RotatingFileHandler(
-            log_file,
-            maxBytes=max_file_size,
-            backupCount=backup_count,
-            encoding='utf-8'
-        )
-        file_handler.setLevel(level)
-        
-        # Always use JSON format for file logs
-        file_formatter = JSONFormatter()
-        file_handler.setFormatter(file_formatter)
-        
-        root_logger.addHandler(file_handler)
-    
-    # Set specific log levels for noisy libraries
-    logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
-    logging.getLogger('aiohttp.client').setLevel(logging.WARNING)
-    logging.getLogger('asyncpg').setLevel(logging.WARNING)
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-    
-    # Log initial setup
+    # Log successful setup
     logger = logging.getLogger(__name__)
     logger.info("Logging configured successfully")
-    if log_file:
-        logger.info(f"Log file: {log_file}")
-    logger.info(f"Log level: {logging.getLevelName(level)}")
+    logger.info(f"Log level: {numeric_level}")
 
 
 class LoggerAdapter(logging.LoggerAdapter):
@@ -282,4 +230,9 @@ def log_error_with_context(
             'context': context or {},
             'event_type': 'error'
         }
-    ) 
+    )
+
+
+def get_logger(name: Optional[str] = None) -> logging.Logger:
+    """Get a logger instance."""
+    return logging.getLogger(name) 

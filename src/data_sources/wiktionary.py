@@ -62,25 +62,47 @@ class WiktionaryDataSource:
         return results
     
     async def extract_range(self, language: str, start_range: str, end_range: str, 
-                          batch_size: int = 50) -> AsyncGenerator[List[Dict[str, Any]], None]:
+                          batch_size: int = 10) -> AsyncGenerator[List[Dict[str, Any]], None]:
         """Extract entries in alphabetical range."""
         if not self.session:
             self.session = ClientSession()
         
         # Get all pages in the range
+        logger.info(f"Starting extraction for {language} Wiktionary range {start_range}-{end_range}")
         all_pages = await self._get_pages_in_range(language, start_range, end_range)
+        
+        total_pages = len(all_pages)
+        if total_pages == 0:
+            logger.warning(f"No pages found in range {start_range}-{end_range}")
+            return
+        
+        logger.info(f"Beginning extraction of {total_pages} pages from {language} Wiktionary")
         
         # Process in batches
         batch = []
+        processed = 0
+        success = 0
+        
         for page_title in all_pages:
+            processed += 1
+            
             try:
                 entry = await self._extract_single_entry(language, page_title)
                 if entry:
                     batch.append(entry)
+                    success += 1
+                    logger.debug(f"Extracted '{page_title}' successfully")
+                else:
+                    logger.debug(f"Skipped '{page_title}' (no valid data)")
                 
                 if len(batch) >= batch_size:
+                    logger.info(f"Yielding batch of {len(batch)} entries ({processed}/{total_pages} processed)")
                     yield batch
                     batch = []
+                
+                # Report progress periodically
+                if processed % 10 == 0:
+                    logger.info(f"Progress: {processed}/{total_pages} pages ({success} successful)")
                 
                 await asyncio.sleep(self.request_delay)
                 
@@ -89,36 +111,67 @@ class WiktionaryDataSource:
                 continue
         
         if batch:
+            logger.info(f"Yielding final batch of {len(batch)} entries")
             yield batch
+            
+        logger.info(f"Extraction complete: {processed}/{total_pages} pages processed, {success} entries extracted")
     
     async def _get_pages_in_range(self, language: str, start_char: str, end_char: str) -> List[str]:
         """Get page titles in alphabetical range."""
         api_url = self.base_urls[language]
         all_pages = []
         
-        params = {
-            'action': 'query',
-            'format': 'json',
-            'list': 'allpages',
-            'apfrom': start_char,
-            'apto': end_char + 'zzz',
-            'aplimit': 500,
-            'apnamespace': 0
-        }
+        # Mehr Seiten laden mit kontinuierlichen API-Anfragen
+        continue_token = None
+        count = 0
+        max_pages = 100  # Limit für die Testphase
         
-        try:
-            async with self.session.get(api_url, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    if 'query' in data and 'allpages' in data['query']:
-                        pages = data['query']['allpages']
-                        for page in pages:
-                            title = page['title']
-                            if self._is_valid_entry_title(title):
-                                all_pages.append(title)
-        except Exception as e:
-            logger.error(f"Error getting pages: {e}")
+        logger.info(f"Fetching pages from {start_char} to {end_char} in {language} Wiktionary")
         
+        while count < max_pages:
+            params = {
+                'action': 'query',
+                'format': 'json',
+                'list': 'allpages',
+                'apfrom': start_char,
+                'apto': end_char + 'zzz',
+                'aplimit': 50,  # Kleinere Batches für bessere Stabilität
+                'apnamespace': 0
+            }
+            
+            if continue_token:
+                params['apcontinue'] = continue_token
+            
+            try:
+                async with self.session.get(api_url, params=params) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        
+                        if 'query' in data and 'allpages' in data['query']:
+                            pages = data['query']['allpages']
+                            for page in pages:
+                                title = page['title']
+                                if self._is_valid_entry_title(title):
+                                    all_pages.append(title)
+                                    count += 1
+                            
+                            # Prüfe auf mehr Seiten
+                            if 'continue' in data and 'apcontinue' in data['continue']:
+                                continue_token = data['continue']['apcontinue']
+                                logger.debug(f"Continuing with token: {continue_token}")
+                                await asyncio.sleep(self.request_delay)  # API-Rate-Limit beachten
+                            else:
+                                break  # Keine weiteren Seiten
+                        else:
+                            break
+                    else:
+                        logger.warning(f"Error status {response.status} fetching pages")
+                        break
+            except Exception as e:
+                logger.error(f"Error getting pages: {e}")
+                await asyncio.sleep(1)  # Längere Wartezeit bei Fehlern
+        
+        logger.info(f"Found {len(all_pages)} valid pages in range {start_char}-{end_char}")
         return all_pages
     
     def _is_valid_entry_title(self, title: str) -> bool:
@@ -127,11 +180,23 @@ class WiktionaryDataSource:
             return False
         
         # Skip special pages
-        if ':' in title or '(' in title:
+        if ':' in title:
             return False
         
-        # Should be mostly alphabetic
-        return bool(re.match(r'^[a-zA-ZÀ-ÿĀ-žА-я\s\-\']+$', title))
+        # Skip parenthetical titles like "Word (disambiguation)"
+        if ' (' in title:
+            return False
+        
+        # Skip numbers only
+        if title.isdigit():
+            return False
+            
+        # Skip titles with special characters that aren't likely to be words
+        if re.search(r'[/\[\]{}]', title):
+            return False
+        
+        # Allow German umlauts, common European letters, hyphens and apostrophes
+        return bool(re.match(r'^[a-zA-ZÀ-ÿĀ-žА-яäöüÄÖÜß\s\-\']+$', title))
     
     async def _extract_single_entry(self, language: str, title: str) -> Optional[Dict[str, Any]]:
         """Extract data for a single entry."""
@@ -182,6 +247,63 @@ class WiktionaryDataSource:
             'labels': []
         }
         
+        # Anpassung für verschiedene Sprachen
+        if language == 'de':
+            return self._parse_german_wikitext(entry, wikitext)
+        else:
+            return self._parse_generic_wikitext(entry, wikitext)
+    
+    def _parse_german_wikitext(self, entry: Dict[str, Any], wikitext: str) -> Optional[Dict[str, Any]]:
+        """Parse German Wiktionary wikitext."""
+        # Extrahiere Wortart ({{Wortart|...}})
+        pos_match = re.search(r'\{\{Wortart\|([^|{}]+)', wikitext)
+        if pos_match:
+            german_pos = pos_match.group(1).strip()
+            # Übersetze deutsche Wortarten
+            pos_mapping = {
+                'Substantiv': 'noun',
+                'Verb': 'verb',
+                'Adjektiv': 'adjective',
+                'Adverb': 'adverb',
+                'Pronomen': 'pronoun',
+                'Präposition': 'preposition',
+                'Konjunktion': 'conjunction',
+                'Artikel': 'article',
+                'Numerale': 'numeral',
+                'Interjektion': 'interjection'
+            }
+            entry['pos'] = pos_mapping.get(german_pos, 'unknown')
+            logger.debug(f"Extracted German POS: {german_pos} -> {entry['pos']}")
+        
+        # Extrahiere IPA
+        ipa_match = re.search(r'\{\{Lautschrift\}\}\s*\[\[([^\]]+)\]\]', wikitext)
+        if ipa_match:
+            entry['ipa'] = ipa_match.group(1).strip()
+        
+        # Extrahiere Definitionen - nach {{Bedeutungen}}
+        definitions = []
+        in_definition_section = False
+        for line in wikitext.split('\n'):
+            if line.startswith('{{Bedeutungen}}'):
+                in_definition_section = True
+                continue
+            elif in_definition_section and line.startswith('{{'):
+                if not line.startswith('{{#'): # Ignoriere Templates
+                    in_definition_section = False
+                    continue
+            
+            if in_definition_section and line.strip().startswith(':'):
+                definition = line.strip()[1:].strip()
+                definition = self._clean_definition(definition)
+                if definition:
+                    definitions.append(definition)
+        
+        entry['definitions'] = definitions[:5]  # Bis zu 5 Definitionen
+        
+        return entry if entry['definitions'] or entry['pos'] else None
+            
+    def _parse_generic_wikitext(self, entry: Dict[str, Any], wikitext: str) -> Optional[Dict[str, Any]]:
+        """Parse Wikitext content for non-German languages."""
         # Extract IPA
         ipa_match = re.search(r'\{\{IPA\|[^}]*\|([^}|]+)', wikitext)
         if ipa_match:

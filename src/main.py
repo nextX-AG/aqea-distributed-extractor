@@ -43,8 +43,9 @@ def cli(ctx, config, verbose):
 @click.option('--workers', '-w', default=5, help='Number of worker instances')
 @click.option('--source', '-s', default='wiktionary', help='Data source (wiktionary, panlex, wikidata)')
 @click.option('--port', '-p', default=8080, help='Master coordinator port')
+@click.option('--work-units-file', help='JSON file with predefined work units')
 @click.pass_context
-def start_master(ctx, language, workers, source, port):
+def start_master(ctx, language, workers, source, port, work_units_file):
     """Start the master coordinator server"""
     config = ctx.obj['config']
     
@@ -54,12 +55,16 @@ def start_master(ctx, language, workers, source, port):
     click.echo(f"   Source: {source}")
     click.echo(f"   Port: {port}")
     
+    if work_units_file:
+        click.echo(f"   Work Units: {work_units_file}")
+    
     coordinator = MasterCoordinator(
         config=config,
         language=language,
         source=source,
         expected_workers=workers,
-        port=port
+        port=port,
+        work_units_file=work_units_file
     )
     
     try:

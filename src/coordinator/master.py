@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from aiohttp import web, ClientSession
 import json
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +62,14 @@ class WorkerInfo:
 class MasterCoordinator:
     """Master coordinator for distributed AQEA extraction."""
     
-    def __init__(self, config, language: str, source: str, expected_workers: int, port: int = 8080):
+    def __init__(self, config, language: str, source: str, expected_workers: int, port: int = 8080,
+                 work_units_file: str = None):
         self.config = config
         self.language = language
         self.source = source
         self.expected_workers = expected_workers
         self.port = port
+        self.work_units_file = work_units_file
         
         # Work management
         self.work_queue: List[WorkUnit] = []
@@ -80,6 +83,11 @@ class MasterCoordinator:
         
     async def create_work_plan(self) -> List[WorkUnit]:
         """Create work units based on language and source configuration."""
+        # Check if we should load from a custom work units file
+        if self.work_units_file and os.path.exists(self.work_units_file):
+            return await self.load_work_units_from_file()
+        
+        # Otherwise, use the default configuration
         work_units = []
         
         # Get language configuration
@@ -111,6 +119,39 @@ class MasterCoordinator:
         logger.info(f"Total estimated entries: {self.total_estimated_entries:,}")
         
         return work_units
+    
+    async def load_work_units_from_file(self) -> List[WorkUnit]:
+        """Load work units from a JSON file."""
+        try:
+            logger.info(f"Loading work units from {self.work_units_file}")
+            with open(self.work_units_file, 'r', encoding='utf-8') as f:
+                work_units_data = json.load(f)
+            
+            work_units = []
+            for item in work_units_data:
+                work_unit = WorkUnit(
+                    id=item['work_id'],
+                    language=item['language'],
+                    source=item['source'],
+                    start_range=item['range_start'],
+                    end_range=item['range_end'],
+                    estimated_entries=item['estimated_entries']
+                )
+                work_units.append(work_unit)
+            
+            self.work_queue = work_units
+            self.total_estimated_entries = sum(wu.estimated_entries for wu in work_units)
+            
+            logger.info(f"Loaded {len(work_units)} work units from file")
+            logger.info(f"Total estimated entries: {self.total_estimated_entries:,}")
+            
+            return work_units
+        except Exception as e:
+            logger.error(f"Error loading work units from file: {e}")
+            logger.info("Falling back to default work plan")
+            # Set work_units_file to None to use default config
+            self.work_units_file = None
+            return await self.create_work_plan()
     
     async def register_worker(self, worker_id: str, ip_address: str) -> bool:
         """Register a new worker."""
