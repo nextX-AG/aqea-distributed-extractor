@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from aiohttp import ClientSession
 import socket
+import os
+import json
 
 from ..data_sources.factory import DataSourceFactory
 from ..aqea.converter import AQEAConverter
@@ -226,88 +228,99 @@ class ExtractionWorker:
         }
     
     async def _store_entries(self, aqea_entries: List[Any]):
-        """Store AQEA entries to Supabase database or local placeholder."""
+        """Store AQEA entries to database or send to master coordinator."""
         if not aqea_entries:
             return {'inserted': 0, 'errors': []}
         
-        # Always try database first
+        # Wenn wir mit einer Datenbank verbunden sind, speichere die Einträge direkt
         if self.database:
-            logger.debug(f"Storing {len(aqea_entries)} AQEA entries to Supabase")
+            logger.debug(f"Speichere {len(aqea_entries)} AQEA-Einträge in Datenbank")
             
             try:
-                # Store entries in Supabase
+                # Store entries in database
                 result = await self.database.store_aqea_entries(aqea_entries)
                 
                 if result['inserted'] > 0:
-                    logger.info(f"✅ Stored {result['inserted']} entries to Supabase (Success rate: {result['success_rate']:.1%})")
-                else:
-                    logger.warning(f"⚠️ No entries were inserted into Supabase")
+                    logger.info(f"✅ {result['inserted']} Einträge in Datenbank gespeichert (Erfolgsrate: {result['success_rate']:.1%})")
                 
                 if result['errors']:
-                    logger.warning(f"⚠️ {len(result['errors'])} errors occurred during storage")
-                    
-                # If insertion failed completely, fall back to local storage
-                if result['inserted'] == 0:
-                    logger.warning("Falling back to local file storage due to database insertion failure")
-                    return await self._store_entries_local(aqea_entries)
+                    logger.warning(f"⚠️ {len(result['errors'])} Fehler beim Speichern aufgetreten")
                     
                 return result
                 
             except Exception as e:
-                logger.error(f"❌ Failed to store entries to Supabase: {e}")
-                logger.warning("Falling back to local file storage due to database exception")
-                return await self._store_entries_local(aqea_entries)
-        else:
-            # No database available, use local storage
-            return await self._store_entries_local(aqea_entries)
-            
-    async def _store_entries_local(self, aqea_entries: List[Any]):
-        """Store entries to local JSON file as fallback."""
+                logger.error(f"❌ Fehler beim Speichern in Datenbank: {e}")
+                # Fallback: Sende Einträge an Master
+        
+        # Fallback oder Standardverhalten: Sende die Einträge an den Master-Coordinator
         try:
-            import os
-            import json
-            from datetime import datetime
+            logger.debug(f"Sende {len(aqea_entries)} AQEA-Einträge an Master-Coordinator")
             
-            # Create output directory
-            output_dir = "extracted_data"
-            os.makedirs(output_dir, exist_ok=True)
-            
-            # Create filename with timestamp and worker ID
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{output_dir}/aqea_entries_{self.worker_id}_{timestamp}.json"
-            
-            # Convert entries to dict format
+            # Konvertiere Einträge in serialisierbares Format
             entries_data = []
             for entry in aqea_entries:
-                if hasattr(entry, 'to_dict'):
-                    entries_data.append(entry.to_dict())
+                entry_dict = {
+                    'address': entry.address,
+                    'label': entry.label,
+                    'description': entry.description,
+                    'domain': entry.domain,
+                    'created_at': entry.created_at.isoformat() if isinstance(entry.created_at, datetime) else entry.created_at,
+                    'updated_at': entry.updated_at.isoformat() if isinstance(entry.updated_at, datetime) else entry.updated_at,
+                    'meta': entry.meta
+                }
+                entries_data.append(entry_dict)
+                
+            # Sende Einträge an Master
+            url = f"{self.master_url}/api/store_entries"
+            async with self.session.post(url, json={
+                'worker_id': self.worker_id,
+                'entries': entries_data
+            }) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    logger.info(f"✅ {result.get('inserted', 0)} Einträge erfolgreich an Master gesendet")
+                    return result
                 else:
-                    # If to_dict not available, convert to dictionary manually
-                    if hasattr(entry, '__dict__'):
-                        entry_dict = entry.__dict__.copy()
-                        # Convert datetime objects to ISO format strings
-                        for key, value in entry_dict.items():
-                            if isinstance(value, datetime):
-                                entry_dict[key] = value.isoformat()
-                        entries_data.append(entry_dict)
-                    else:
-                        # Last resort
-                        entries_data.append(str(entry))
+                    error_text = await response.text()
+                    logger.error(f"❌ Fehler beim Senden an Master: {response.status} - {error_text}")
+                    
+            # Lokale Sicherung als Fallback
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"extracted_data/aqea_entries_{self.worker_id}_{timestamp}.json"
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
             
-            # Write to JSON file
             with open(filename, 'w', encoding='utf-8') as f:
-                json.dump({
-                    'worker_id': self.worker_id,
-                    'timestamp': datetime.now().isoformat(),
-                    'entry_count': len(entries_data),
-                    'entries': entries_data
-                }, f, ensure_ascii=False, indent=2)
+                json.dump(entries_data, f, ensure_ascii=False, indent=2)
             
-            logger.info(f"💾 Stored {len(aqea_entries)} AQEA entries to local file: {filename}")
-            return {'inserted': len(aqea_entries), 'errors': []}
-            
+            logger.info(f"✅ Daten lokal gesichert: {filename}")
+            return {'inserted': 0, 'errors': ['Lokal gespeichert als Fallback']}
+                
         except Exception as e:
-            logger.error(f"❌ Failed to store entries to local file: {e}")
+            logger.error(f"❌ Fehler beim Speichern/Senden der Einträge: {e}")
+            
+            # Versuche lokale Sicherung als letzten Ausweg
+            try:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"extracted_data/aqea_entries_{self.worker_id}_{timestamp}.json"
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
+                
+                # Vereinfachte Serialisierung für Notfallspeicherung
+                entries_simple = []
+                for entry in aqea_entries:
+                    entries_simple.append({
+                        'address': entry.address,
+                        'label': entry.label,
+                        'description': entry.description
+                    })
+                
+                with open(filename, 'w', encoding='utf-8') as f:
+                    json.dump(entries_simple, f, ensure_ascii=False, indent=2)
+                
+                logger.warning(f"⚠️ Notfall-Backup erstellt: {filename}")
+                
+            except Exception as backup_error:
+                logger.critical(f"❌❌ Kritischer Fehler - Datenverlust: {backup_error}")
+            
             return {'inserted': 0, 'errors': [str(e)]}
     
     async def work_loop(self):

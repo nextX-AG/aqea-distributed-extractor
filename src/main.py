@@ -44,10 +44,18 @@ def cli(ctx, config, verbose):
 @click.option('--source', '-s', default='wiktionary', help='Data source (wiktionary, panlex, wikidata)')
 @click.option('--port', '-p', default=8080, help='Master coordinator port')
 @click.option('--work-units-file', help='JSON file with predefined work units')
+@click.option('--config-file', help='Alternative config file (JSON)')
 @click.pass_context
-def start_master(ctx, language, workers, source, port, work_units_file):
+def start_master(ctx, language, workers, source, port, work_units_file, config_file):
     """Start the master coordinator server"""
-    config = ctx.obj['config']
+    if config_file:
+        # Lade benutzerdefinierte Konfiguration
+        import json
+        with open(config_file, 'r') as f:
+            config_dict = json.load(f)
+        config = Config(config_dict)
+    else:
+        config = ctx.obj['config']
     
     click.echo(f"🎯 Starting AQEA Distributed Extractor - Master Mode")
     click.echo(f"   Language: {language}")
