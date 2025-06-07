@@ -65,9 +65,14 @@ class CloudProviderConfig:
 class Config:
     """Main configuration class."""
     
-    def __init__(self, config_file: Optional[str] = None):
-        self.config_file = config_file or "config/default.yml"
-        self.data: Dict[str, Any] = {}
+    def __init__(self, config_file_or_data: Optional[str | Dict[str, Any]] = None):
+        # Kann entweder ein Dateipfad oder ein Dictionary sein
+        if isinstance(config_file_or_data, dict):
+            self.config_file = None
+            self.data = config_file_or_data
+        else:
+            self.config_file = config_file_or_data or "config/default.yml"
+            self.data = {}
         
         # Default configurations
         self.database = DatabaseConfig()
@@ -79,18 +84,22 @@ class Config:
     
     def _load_config(self):
         """Load configuration from file and environment variables."""
-        # Load from file
-        if os.path.exists(self.config_file):
-            try:
-                with open(self.config_file, 'r', encoding='utf-8') as f:
-                    self.data = yaml.safe_load(f) or {}
-                logger.info(f"Loaded configuration from {self.config_file}")
-            except Exception as e:
-                logger.warning(f"Failed to load config file {self.config_file}: {e}")
-                self.data = {}
+        # Wenn bereits Daten direkt übergeben wurden, nichts aus Datei laden
+        if self.config_file is not None:
+            # Load from file
+            if os.path.exists(self.config_file):
+                try:
+                    with open(self.config_file, 'r', encoding='utf-8') as f:
+                        self.data = yaml.safe_load(f) or {}
+                    logger.info(f"Loaded configuration from {self.config_file}")
+                except Exception as e:
+                    logger.warning(f"Failed to load config file {self.config_file}: {e}")
+                    self.data = {}
+            else:
+                logger.info(f"Config file {self.config_file} not found, using defaults")
+                self.data = self._get_default_config()
         else:
-            logger.info(f"Config file {self.config_file} not found, using defaults")
-            self.data = self._get_default_config()
+            logger.info("Using provided configuration data")
         
         # Override with environment variables
         self._load_from_environment()
