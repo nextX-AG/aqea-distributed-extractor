@@ -1,8 +1,8 @@
 # 📋 AQEA Distributed Extractor - TODO & Roadmap
 
 > **🎉 System Status: VOLLSTÄNDIG FUNKTIONSFÄHIG MIT DATENBANK** ✅  
-> **🔥 NEUER MEILENSTEIN: Supabase Integration erfolgreich repariert (Juni 2024)** ✅
-> **Stand: Juni 2024** - HTTP-only Mode operational, Supabase-Integration vollständig funktional, Python 3.11 setup bewährt, Kritische Bugs behoben
+> **🔥 NEUER MEILENSTEIN: USH-Integration (Universal Semantic Hierarchy) gestartet (Juli 2024)** 🚀
+> **Stand: Juli 2024** - HTTP-only Mode operational, Supabase-Integration vollständig funktional, Python 3.11 setup bewährt, USH-Integration in Arbeit
 
 ---
 
@@ -29,7 +29,31 @@
 
 ---
 
-## 🔥 **NEUER ABSCHNITT: Datenbank-Integration Erfolg (Juni 2024)**
+## 🔥 **NEUER ABSCHNITT: Universal Semantic Hierarchy Integration (Juli 2024)**
+
+### 🎯 **P0.0: USH-Adressierung Implementation** 🚀 **IN PROGRESS**
+- **Status**: 🚀 **NEUES FEATURE IN ENTWICKLUNG**
+- **Feature**: Universal Semantic Hierarchy (USH) für 4-byte AQEA-Adressierung
+- **Scope**: 
+  - QQ-Byte: Universelle semantische Kategorien (linguistische Universalien)
+  - EE-Byte: Hierarchische Cluster (Häufigkeit, Abstraktheit, etc.)
+  - A2-Byte: Vector-optimierte Element-IDs für ML/AI
+- **Basis**: UNIVERSAL_LANGUAGE_DOMAIN_PLAN.md als Source of Truth
+- **Impact**: 🎯 **Sprachübergreifende Universalität** - gleiche Konzepte haben gleiche Adressen
+- **Effort**: ~2 Wochen - gestartet Juli 2024
+
+### 🎯 **P0.1: Neue Converter-Engine** 🚀 **GEPLANT**
+- **Status**: 🚀 **DESIGN PHASE**
+- **Feature**: Machine-Learning-optimierte Konvertierung nach USH-Format
+- **Technologie**: 
+  - Embedding-basierte Ähnlichkeitssuche
+  - Häufigkeitsbasierte Clustering-Algorithmen
+  - Cross-linguistische Mappings
+- **Libraries**: `sentence-transformers`, `scikit-learn`, `numpy`
+- **Impact**: 🧠 **AI-Ready Wissensrepräsentation** - optimiert für Vector-Datenbanken
+- **Effort**: ~1 Woche - Start geplant für Mitte Juli 2024
+
+## 🔥 **BISHERIGE ERFOLGE: Datenbank-Integration (Juni 2024)**
 
 ### 🎯 **P0.0: SQLite Datenbank Implementation** ✅ **ABGESCHLOSSEN**
 - **Status**: ✅ **NEUE FUNKTIONALITÄT**
@@ -477,17 +501,17 @@
 6. ~~**Supabase Database** - Vollständige Integration und Testing~~ ✅
 7. ~~**Fallback Mechanism** - Lokale JSON-Speicherung implementiert~~ ✅
 
-### **🚀 AKTUELLER FOKUS: Production Deployment (This Week)**
-8. **SQLite Integration** - Implementierung einer lokalen Datenbank-Alternative ✅
-9. **Live Server Deployment** - Git pull + systemctl restart auf allen Servern
-10. **Production Testing** - Vollständige deutsche Wiktionary-Extraktion mit Datenbank
-11. **Performance Monitoring** - 24/7 Überwachung der Extraktionsraten
+### **🚀 AKTUELLER FOKUS: USH-Integration (Universal Semantic Hierarchy)**
+8. **USH-Mapping implementieren** - Integration der neuen Adressierungsstruktur aus UNIVERSAL_LANGUAGE_DOMAIN_PLAN.md
+9. **AQEA Converter Upgrade** - Erweiterung des Konverters für neue QQ/EE/A2-Kategorien
+10. **Embedding-basierte ID-Generierung** - Optimierte A2-Generierung für Vector-Datenbanken
+11. **Cross-Linguistisches Mapping** - Gleiches Konzept = gleiche QQ:EE:A2 über Sprachgrenzen
 
-### **Day 5-7: Nächste Features nach erfolgreichem Deployment**  
-11. **Enhanced logging** - Structured JSON logging mit Rotation
-12. **Health Checks** - Erweiterte Systemdiagnostik
-13. **Graceful Shutdown** - SIGTERM Handler und Clean Exit
-14. **Production Documentation** - Updated Server Setup Guide
+### **Day 5-7: USH-Integration & Optimierung**  
+12. **Backward Compatibility** - Unterstützung für alte und neue Adressen
+13. **ML-Kategorie-Erkennung** - Automatische Kategorisierung für QQ-Byte
+14. **Häufigkeits-Cluster** - EE-Byte-Optimierung nach Häufigkeit
+15. **Production Testing** - Validierung mit realen Sprachdaten
 
 ---
 

@@ -1,0 +1,22 @@
+{
+    "database": {
+        "type": "sqlite",
+        "sqlite_path": "aqea.db"
+    },
+    "aqea": {
+        "use_legacy_mode": false,
+        "enable_cross_linguistic": true,
+        "ush_version": "1.0",
+        "address_format": "ush"
+    },
+    "extraction": {
+        "batch_size": 10,
+        "max_entries_per_work_unit": 50,
+        "enable_ush_conversion": true,
+        "default_converter": "ush"
+    },
+    "logging": {
+        "level": "INFO",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    }
+}

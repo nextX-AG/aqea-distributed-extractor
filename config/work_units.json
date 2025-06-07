@@ -768,5 +768,20 @@
     "status": "pending",
     "assigned_worker": null,
     "entries_processed": 0
+  },
+  {
+    "id": "de_wiktionary_71",
+    "language": "de",
+    "source": "wiktionary",
+    "start_range": "A",
+    "end_range": "B",
+    "estimated_entries": 15000,
+    "status": "pending",
+    "worker_id": null,
+    "assigned_at": null,
+    "completed_at": null,
+    "entries_processed": 0,
+    "processing_rate": 0,
+    "errors": []
   }
 ]

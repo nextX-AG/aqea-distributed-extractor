@@ -1,0 +1,400 @@
+{
+  "timestamp": "2025-06-07T17:15:37.108462",
+  "german_entries": [
+    {
+      "address": "0x20:08:13:89",
+      "label": "Wasser",
+      "description": "De noun 'Wasser'. H₂O, drinking liquid [USH: Natural Phenomenon, Medium Frequent] Pronunciation: /ˈvasɐ/",
+      "domain": "0x20",
+      "lang_ui": "de",
+      "status": "active",
+      "created_at": "2025-06-07T17:15:37.108126",
+      "updated_at": "2025-06-07T17:15:37.108127",
+      "created_by": "aqea-ush-converter",
+      "reviewed_by": null,
+      "dictionary_id": null,
+      "version_hash": null,
+      "signature": null,
+      "element_hash": null,
+      "vector": null,
+      "embedding_source": null,
+      "aqea_path": null,
+      "license": null,
+      "relations": [],
+      "meta": {
+        "lemma": "Wasser",
+        "source": "wiktionary",
+        "extraction_timestamp": "2025-06-07T17:15:37.108110",
+        "ush_version": "1.0",
+        "ipa": "ˈvasɐ",
+        "pos": "noun",
+        "definitions": [
+          "H₂O, drinking liquid",
+          "A clear, colorless liquid that falls as rain"
+        ],
+        "labels": [
+          "nature",
+          "fluid"
+        ],
+        "translations": {
+          "en": [
+            "water"
+          ],
+          "fr": [
+            "eau"
+          ],
+          "es": [
+            "agua"
+          ]
+        },
+        "ush_category": "natural_phenomenon",
+        "ush_cluster": "medium_frequent",
+        "frequency": 1400,
+        "conversion_timestamp": "2025-06-07T17:15:37.107950",
+        "address_format": "ush",
+        "ush_compatible": true
+      }
+    },
+    {
+      "address": "0x20:10:12:E2",
+      "label": "gehen",
+      "description": "De verb 'gehen'. to walk [USH: Motion Verb, Frequent] Pronunciation: /ˈɡeːən/",
+      "domain": "0x20",
+      "lang_ui": "de",
+      "status": "active",
+      "created_at": "2025-06-07T17:15:37.108213",
+      "updated_at": "2025-06-07T17:15:37.108214",
+      "created_by": "aqea-ush-converter",
+      "reviewed_by": null,
+      "dictionary_id": null,
+      "version_hash": null,
+      "signature": null,
+      "element_hash": null,
+      "vector": null,
+      "embedding_source": null,
+      "aqea_path": null,
+      "license": null,
+      "relations": [],
+      "meta": {
+        "lemma": "gehen",
+        "source": "wiktionary",
+        "extraction_timestamp": "2025-06-07T17:15:37.108197",
+        "ush_version": "1.0",
+        "ipa": "ˈɡeːən",
+        "pos": "verb",
+        "definitions": [
+          "to walk",
+          "to go",
+          "to move by foot"
+        ],
+        "labels": [
+          "motion",
+          "movement"
+        ],
+        "translations": {
+          "en": [
+            "go",
+            "walk"
+          ],
+          "fr": [
+            "aller",
+            "marcher"
+          ],
+          "es": [
+            "ir",
+            "caminar"
+          ]
+        },
+        "ush_category": "motion_verb",
+        "ush_cluster": "frequent",
+        "frequency": 1650,
+        "conversion_timestamp": "2025-06-07T17:15:37.108185",
+        "address_format": "ush",
+        "ush_compatible": true
+      }
+    },
+    {
+      "address": "0x20:20:12:F7",
+      "label": "groß",
+      "description": "De adjective 'groß'. big [USH: Dimension Adj, Frequent] Pronunciation: /ɡʁoːs/",
+      "domain": "0x20",
+      "lang_ui": "de",
+      "status": "active",
+      "created_at": "2025-06-07T17:15:37.108267",
+      "updated_at": "2025-06-07T17:15:37.108267",
+      "created_by": "aqea-ush-converter",
+      "reviewed_by": null,
+      "dictionary_id": null,
+      "version_hash": null,
+      "signature": null,
+      "element_hash": null,
+      "vector": null,
+      "embedding_source": null,
+      "aqea_path": null,
+      "license": null,
+      "relations": [],
+      "meta": {
+        "lemma": "groß",
+        "source": "wiktionary",
+        "extraction_timestamp": "2025-06-07T17:15:37.108246",
+        "ush_version": "1.0",
+        "ipa": "ɡʁoːs",
+        "pos": "adjective",
+        "definitions": [
+          "big",
+          "large",
+          "of considerable size"
+        ],
+        "labels": [
+          "dimension",
+          "size"
+        ],
+        "translations": {
+          "en": [
+            "big",
+            "large"
+          ],
+          "fr": [
+            "grand"
+          ],
+          "es": [
+            "grande"
+          ]
+        },
+        "ush_category": "dimension_adj",
+        "ush_cluster": "frequent",
+        "frequency": 1650,
+        "conversion_timestamp": "2025-06-07T17:15:37.108236",
+        "address_format": "ush",
+        "ush_compatible": true
+      }
+    },
+    {
+      "address": "0x20:14:12:45",
+      "label": "Liebe",
+      "description": "De noun 'Liebe'. strong affection [USH: Emotion Verb, Frequent] Pronunciation: /ˈliːbə/",
+      "domain": "0x20",
+      "lang_ui": "de",
+      "status": "active",
+      "created_at": "2025-06-07T17:15:37.108320",
+      "updated_at": "2025-06-07T17:15:37.108320",
+      "created_by": "aqea-ush-converter",
+      "reviewed_by": null,
+      "dictionary_id": null,
+      "version_hash": null,
+      "signature": null,
+      "element_hash": null,
+      "vector": null,
+      "embedding_source": null,
+      "aqea_path": null,
+      "license": null,
+      "relations": [],
+      "meta": {
+        "lemma": "Liebe",
+        "source": "wiktionary",
+        "extraction_timestamp": "2025-06-07T17:15:37.108301",
+        "ush_version": "1.0",
+        "ipa": "ˈliːbə",
+        "pos": "noun",
+        "definitions": [
+          "strong affection",
+          "deep romantic feeling"
+        ],
+        "labels": [
+          "emotion",
+          "feeling"
+        ],
+        "translations": {
+          "en": [
+            "love"
+          ],
+          "fr": [
+            "amour"
+          ],
+          "es": [
+            "amor"
+          ]
+        },
+        "ush_category": "emotion_verb",
+        "ush_cluster": "frequent",
+        "frequency": 1600,
+        "conversion_timestamp": "2025-06-07T17:15:37.108291",
+        "address_format": "ush",
+        "ush_compatible": true
+      }
+    },
+    {
+      "address": "0x20:0A:12:3B",
+      "label": "unter",
+      "description": "De preposition 'unter'. below [USH: Food Substance, Frequent] Pronunciation: /ˈʊntɐ/",
+      "domain": "0x20",
+      "lang_ui": "de",
+      "status": "active",
+      "created_at": "2025-06-07T17:15:37.108360",
+      "updated_at": "2025-06-07T17:15:37.108361",
+      "created_by": "aqea-ush-converter",
+      "reviewed_by": null,
+      "dictionary_id": null,
+      "version_hash": null,
+      "signature": null,
+      "element_hash": null,
+      "vector": null,
+      "embedding_source": null,
+      "aqea_path": null,
+      "license": null,
+      "relations": [],
+      "meta": {
+        "lemma": "unter",
+        "source": "wiktionary",
+        "extraction_timestamp": "2025-06-07T17:15:37.108347",
+        "ush_version": "1.0",
+        "ipa": "ˈʊntɐ",
+        "pos": "preposition",
+        "definitions": [
+          "below",
+          "beneath",
+          "under"
+        ],
+        "labels": [
+          "position",
+          "relation"
+        ],
+        "translations": {
+          "en": [
+            "under",
+            "below"
+          ],
+          "fr": [
+            "sous"
+          ],
+          "es": [
+            "bajo"
+          ]
+        },
+        "ush_category": "food_substance",
+        "ush_cluster": "frequent",
+        "frequency": 1350,
+        "conversion_timestamp": "2025-06-07T17:15:37.108339",
+        "address_format": "ush",
+        "ush_compatible": true
+      }
+    }
+  ],
+  "english_entries": [
+    {
+      "address": "0x21:08:12:9C",
+      "label": "water",
+      "description": "En noun 'water'. clear liquid H₂O [USH: Natural Phenomenon, Frequent] Pronunciation: /ˈwɔːtə(r)/",
+      "domain": "0x21",
+      "lang_ui": "en",
+      "status": "active",
+      "created_at": "2025-06-07T17:15:37.108395",
+      "updated_at": "2025-06-07T17:15:37.108396",
+      "created_by": "aqea-ush-converter",
+      "reviewed_by": null,
+      "dictionary_id": null,
+      "version_hash": null,
+      "signature": null,
+      "element_hash": null,
+      "vector": null,
+      "embedding_source": null,
+      "aqea_path": null,
+      "license": null,
+      "relations": [],
+      "meta": {
+        "lemma": "water",
+        "source": "wiktionary",
+        "extraction_timestamp": "2025-06-07T17:15:37.108387",
+        "ush_version": "1.0",
+        "ipa": "ˈwɔːtə(r)",
+        "pos": "noun",
+        "definitions": [
+          "clear liquid H₂O",
+          "liquid that falls as rain"
+        ],
+        "labels": [
+          "nature",
+          "fluid"
+        ],
+        "translations": {
+          "de": [
+            "Wasser"
+          ],
+          "fr": [
+            "eau"
+          ],
+          "es": [
+            "agua"
+          ]
+        },
+        "ush_category": "natural_phenomenon",
+        "ush_cluster": "frequent",
+        "frequency": 1600,
+        "conversion_timestamp": "2025-06-07T17:15:37.108380",
+        "address_format": "ush",
+        "ush_compatible": true
+      }
+    },
+    {
+      "address": "0x21:10:11:DB",
+      "label": "go",
+      "description": "En verb 'go'. move from one place to another [USH: Motion Verb, Very Frequent] Pronunciation: /ɡəʊ/",
+      "domain": "0x21",
+      "lang_ui": "en",
+      "status": "active",
+      "created_at": "2025-06-07T17:15:37.108436",
+      "updated_at": "2025-06-07T17:15:37.108436",
+      "created_by": "aqea-ush-converter",
+      "reviewed_by": null,
+      "dictionary_id": null,
+      "version_hash": null,
+      "signature": null,
+      "element_hash": null,
+      "vector": null,
+      "embedding_source": null,
+      "aqea_path": null,
+      "license": null,
+      "relations": [],
+      "meta": {
+        "lemma": "go",
+        "source": "wiktionary",
+        "extraction_timestamp": "2025-06-07T17:15:37.108420",
+        "ush_version": "1.0",
+        "ipa": "ɡəʊ",
+        "pos": "verb",
+        "definitions": [
+          "move from one place to another",
+          "travel"
+        ],
+        "labels": [
+          "motion",
+          "movement"
+        ],
+        "translations": {
+          "de": [
+            "gehen"
+          ],
+          "fr": [
+            "aller"
+          ],
+          "es": [
+            "ir"
+          ]
+        },
+        "ush_category": "motion_verb",
+        "ush_cluster": "very_frequent",
+        "frequency": 1900,
+        "conversion_timestamp": "2025-06-07T17:15:37.108413",
+        "address_format": "ush",
+        "ush_compatible": true
+      }
+    }
+  ],
+  "cross_linguistic_demo": {
+    "german_water_address": "0x20:08:13:89",
+    "english_water_address": "0x21:08:12:9C",
+    "universal_pattern_german": "08:13:89",
+    "universal_pattern_english": "08:12:9C",
+    "are_equivalent": false
+  }
+}

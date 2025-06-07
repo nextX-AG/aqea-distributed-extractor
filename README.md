@@ -1,10 +1,40 @@
 # AQEA Distributed Extractor
 
-**Distributed data extraction system for AQEA (Universal Knowledge Database)**
+> **Universal Language Data Extraction at Scale**
+> 
+> Ein verteiltes System für die Extraktion von Sprachdaten aus mehreren Quellen (Wiktionary, PanLex, etc.) und Konvertierung in das **AQEA 4-byte addressing format** für universelle Wissensrepräsentation.
 
-**🎉 STATUS: VOLLSTÄNDIG FUNKTIONSFÄHIG** - System operational mit HTTP-only Mode, Python 3.11, venv setup
+## Was ist AQEA?
 
-Automatically extracts and processes language data from multiple sources (Wiktionary, PanLex, Wikidata) using a distributed cloud architecture.
+**AQEA (Advanced Quantum Epistemic Architecture)** ist ein universelles Adressierungssystem, das **eindeutige 4-byte Adressen** jedem Wissensbestandteil der Welt zuweist.
+
+### Format: `AA:QQ:EE:A2`
+- **AA** = Domain (z.B. 0x20 = Deutsch, 0x21 = Englisch)
+- **QQ** = Category (z.B. 0x01 = Nomen, 0x02 = Verb)  
+- **EE** = Subcategory (z.B. 0x01 = Natur, 0x02 = Tiere)
+- **A2** = Element ID (eindeutig innerhalb der Subcategory)
+
+### Beispiele für AQEA-Adressen
+```
+0x20:01:01:01 = Deutsches Wort "Wasser" (water)
+0x21:01:01:01 = Englisches Wort "water"  
+0x04:01:00:01 = Chemisches Element H₂O
+0x30:01:01:1A = Audio-Ton 440Hz (A4)
+```
+
+Aus unserer aktuellen Datenbank:
+```
+0x20:01:01:EB = Deutsches Wort "CD-Player" (Nomen, Natur-Kategorie)
+0x20:03:01:5C = Deutsches Wort "D-Zug-artig" (Adjektiv, Natur-Kategorie)
+0x20:01:34:8A = Deutsches Wort "Diadoche" (Nomen, Abstrakta/Handlung-Kategorie)
+```
+
+### Warum AQEA?
+- **🌍 Universal**: Jedes Konzept bekommt genau eine Adresse
+- **🔗 Linkable**: Cross-language und cross-domain Referenzen
+- **💾 Compact**: 4 bytes = 4.3 Milliarden eindeutige Adressen
+- **🚀 Fast**: Direkter Memory-Zugriff für AI-Systeme
+- **📈 Scalable**: Hierarchische Struktur unterstützt infinite Erweiterung
 
 ## 🎯 **Features**
 
@@ -331,4 +361,67 @@ MIT License - Siehe [LICENSE](LICENSE) für Details.
 
 ---
 
-**🎉 System ist operational und bereit für Produktionseinsatz! 🚀** 
+**🎉 System ist operational und bereit für Produktionseinsatz! 🚀**
+
+## Installation
+
+```bash
+# Repository klonen
+git clone https://github.com/nextX-AG/aqea-distributed-extractor
+cd aqea-distributed-extractor
+
+# Python 3.11 venv setup
+python3.11 -m venv aqea-venv
+source aqea-venv/bin/activate
+
+# Dependencies installieren
+pip install -r requirements.txt
+```
+
+## Schnellstart - SQLite Modus
+
+Am einfachsten startest du mit dem lokalen SQLite-Modus:
+
+```bash
+# System mit lokalem SQLite starten (ein Terminal genügt)
+python scripts/start_with_sqlite.py --workers 2
+
+# Status prüfen
+curl http://localhost:8080/api/status | python -m json.tool
+```
+
+## AQEA-Einträge prüfen
+
+Um extrahierte AQEA-Einträge zu überprüfen:
+
+```bash
+# Zufällige Einträge aus der Datenbank anzeigen
+python scripts/check_aqea_entries.py
+```
+
+Beispielausgabe:
+```
+✅ Datenbankverbindung hergestellt. Insgesamt 678 AQEA-Einträge gefunden.
+
+📊 5 zufällige AQEA-Einträge aus der Datenbank:
+
+Eintrag 1:
+  🏷️  Label:       CD-Player
+  🔢 Adresse:     0x20:01:01:EB
+     - Domain:    0x20 (0x20)
+     - Kategorie:  01
+     - Subkat.:    01
+     - Element-ID: EB
+  📝 Beschreibung: De noun 'CD-Player'. [1] elektronisches Gerät zum Hören von Audio-CDs
+  ℹ️  Meta-Daten:
+     - lemma: CD-Player
+     - source: wiktionary
+     - extraction_timestamp: 2025-06-07T09:44:47.521516
+     - pos: noun
+     - definitions: ['[1] elektronisches Gerät zum Hören von Audio-CDs']
+     - frequency: 1350
+```
+
+## Weitere Informationen
+
+Siehe [ARCHITECTURE.md](ARCHITECTURE.md) für eine vollständige Dokumentation der Systemarchitektur und Komponenten. 

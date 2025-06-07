@@ -361,6 +361,28 @@ class MasterCoordinator:
             'work_units': len(self.work_queue)
         })
     
+    async def handle_reload_work_units(self, request):
+        """Handle requests to reload work units from database."""
+        try:
+            if await self.reload_work_units():
+                return web.json_response({
+                    'success': True,
+                    'message': f"Loaded {len(self.work_queue)} work units from database",
+                    'count': len(self.work_queue)
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'message': "Failed to reload work units",
+                    'count': len(self.work_queue)
+                }, status=500)
+        except Exception as e:
+            logger.error(f"Error handling reload request: {e}")
+            return web.json_response({
+                'success': False,
+                'message': str(e)
+            }, status=500)
+    
     async def handle_store_entries(self, request):
         """Handle entry storage from workers."""
         data = await request.json()
@@ -466,6 +488,7 @@ class MasterCoordinator:
         app.router.add_get('/api/status', self.handle_status)
         app.router.add_get('/api/health', self.handle_health)
         app.router.add_post('/api/store_entries', self.handle_store_entries)
+        app.router.add_post('/api/workunit/reload', self.handle_reload_work_units)
         
         # Start server
         runner = web.AppRunner(app)
@@ -588,4 +611,53 @@ class MasterCoordinator:
         except Exception as e:
             logger.error(f"❌ Fehler beim Initialisieren der Arbeitspakete in der Datenbank: {e}")
             if hasattr(self.database, 'connection'):
-                self.database.connection.rollback() 
+                self.database.connection.rollback()
+
+    async def reload_work_units(self) -> bool:
+        """Reload work units from database."""
+        if not self.database or not hasattr(self.database, 'connection'):
+            logger.warning("⚠️ Keine Datenbankverbindung verfügbar, kann keine Work Units neu laden")
+            return False
+            
+        try:
+            logger.info("🔄 Lade Work Units aus der Datenbank neu...")
+            
+            # Clear pending work units
+            self.work_queue = [wu for wu in self.work_queue if wu.status != 'pending']
+            
+            # Load work units from database
+            cursor = self.database.connection.cursor()
+            cursor.execute("SELECT * FROM work_units WHERE status = 'pending'")
+            rows = cursor.fetchall()
+            
+            # Convert to WorkUnit objects
+            new_units_count = 0
+            for row in rows:
+                # SQLite Row objects allow column access by name
+                source = row['source'] if 'source' in row.keys() else self.source
+                if source is None:
+                    source = 'wiktionary'  # Default fallback
+                
+                estimated_entries = row['estimated_entries'] if 'estimated_entries' in row.keys() else 15000
+                
+                work_unit = WorkUnit(
+                    id=row['work_id'],
+                    language=row['language'],
+                    source=source,
+                    start_range=row['start_range'],
+                    end_range=row['end_range'],
+                    estimated_entries=estimated_entries,
+                    status=row['status'],
+                )
+                
+                # Update only if not already in self.work_units
+                if work_unit.id not in [w.id for w in self.work_queue]:
+                    self.work_queue.append(work_unit)
+                    new_units_count += 1
+                    
+            logger.info(f"✅ {new_units_count} neue Arbeitspakete aus Datenbank geladen")
+            return True
+                
+        except Exception as e:
+            logger.error(f"❌ Fehler beim Neuladen der Arbeitspakete aus der Datenbank: {e}")
+            return False 

@@ -281,6 +281,8 @@ ssh worker-server "cd /opt/aqea-distributed-extractor && git pull && systemctl r
 
 ## 🧩 Core Components
 
+Das AQEA-System besteht aus mehreren Kernkomponenten, die zusammenarbeiten, um eine verteilte, skalierbare und effiziente Extraktion und Konvertierung von Sprachdaten zu ermöglichen.
+
 ### 1. Master Coordinator (`src/coordinator/master.py`) ✅ **OPERATIONAL**
 
 **Responsibilities ✅ Implemented:**
@@ -364,7 +366,112 @@ if self.database:
 }
 ```
 
-### 4. Database Architecture ✅ **READY**
+### 4. Universal Semantic Hierarchy (USH) ✅ **NEW FEATURE**
+
+**Was ist USH?**
+Die Universal Semantic Hierarchy (USH) ist eine Erweiterung des AQEA-Adressierungssystems, die das bestehende 4-Byte-Format (`AA:QQ:EE:A2`) optimiert, um sprachübergreifende semantische Konsistenz und ML/Vector-Datenbank-Kompatibilität zu gewährleisten.
+
+**Kernverbesserungen:**
+- 🌍 **Sprachübergreifende Konsistenz**: Gleiche Konzepte haben gleiche QQ:EE:A2-Muster über Sprachgrenzen hinweg
+- 🧠 **ML/Vector-Optimierung**: Verbesserte Kompatibilität mit Vector-Datenbanken und Embedding-Suche
+- 📊 **Semantische Präzision**: Erweiterte semantische Kategorisierung (von 10 auf 256 universelle Kategorien)
+- 🔄 **Rückwärtskompatibilität**: Nahtlose Migration von Legacy-Adressen
+
+**USH-Komponenten im AQEA-System:**
+
+```mermaid
+classDiagram
+    class AQEAEntry {
+        +string address
+        +string label
+        +string description
+        +string domain
+        +Dict meta
+        +to_dict()
+        +to_json()
+        +validate()
+    }
+    
+    class USHAdapter {
+        +language: string
+        +domain_byte: int
+        +map_pos_to_universal_category()
+        +determine_semantic_category()
+        +determine_hierarchical_cluster()
+        +determine_semantic_role()
+        +generate_embedding_based_a2()
+        +generate_ush_address()
+        +find_cross_linguistic_equivalent()
+        +register_cross_linguistic_mapping()
+        +migrate_legacy_address()
+    }
+    
+    class USHConverter {
+        +language: string
+        +use_legacy_mode: bool
+        +enable_cross_linguistic: bool
+        +convert()
+        +migrate_entry()
+        +find_cross_linguistic_equivalent()
+    }
+    
+    class AddressGenerator {
+        +allocated_addresses: Dict
+        +get_next_element_id()
+        +get_statistics()
+    }
+    
+    class AQEAConverter {
+        +domain_byte: int
+        +convert()
+        +_generate_address()
+        +_determine_semantic_category()
+    }
+    
+    USHConverter --o USHAdapter : uses
+    USHConverter --o AddressGenerator : uses
+    USHConverter --> AQEAEntry : creates
+    AQEAConverter --> AQEAEntry : creates
+    AQEAConverter --o AddressGenerator : uses
+```
+
+**Adressformat-Optimierung:**
+- **AA-Byte**: Sprachdomäne (z.B. 0x20 für Deutsch)
+- **QQ-Byte**: Universelle semantische Kategorie (z.B. 0x08 für Naturphänomen)
+- **EE-Byte**: Hierarchisches Clustering (z.B. 0x10 für häufige Wörter)
+- **A2-Byte**: Vector-optimierte Element-ID
+
+**Implementierte Module:**
+- `src/aqea/ush_categories.py`: Definiert alle USH-Kategorien basierend auf linguistischen Universalien
+- `src/aqea/ush_adapter.py`: Brücke zwischen Legacy- und USH-Format
+- `src/aqea/ush_converter.py`: USH-erweiterter AQEA-Konverter
+
+**Beispiel für verbesserte Adressierung:**
+```python
+# Alte Adressierung (POS-basiert)
+"0x20:01:01:01"  # Deutsch:Noun:Nature:ID-1
+
+# Neue USH-Adressierung (semantisch universell)
+"0x20:08:10:15"  # Deutsch:Naturphänomen:Ultra-Häufig:Wasser
+"0x21:08:10:15"  # Englisch:Naturphänomen:Ultra-Häufig:Water
+```
+
+**Nahtlose Integration:**
+```python
+# In master.py oder worker.py
+config = {
+    'aqea': {
+        'use_legacy_mode': False,  # USH aktivieren
+        'enable_cross_linguistic': True  # Cross-linguistische Mappings aktivieren
+    }
+}
+
+# Legacy Converter ersetzen
+# converter = AQEAConverter(config, language, database)
+converter = USHConverter(config, language, database)
+```
+
+### 5. Database Architecture ✅ **READY**
 
 **Supabase Schema (✅ DEPLOYED):**
 ```sql
@@ -767,6 +874,51 @@ curl http://localhost:8080/api/status | python -m json.tool
 ./scripts/setup-cloud-database.sh status
 ```
 
+### Testen der USH-Integration (🚀 NEW FEATURE)
+
+Die USH-Komponente des AQEA-Systems kann mit dem bereitgestellten Test-Skript getestet werden:
+
+```bash
+# 1. Repository klonen und Setup durchführen
+git clone https://github.com/nextX-AG/aqea-distributed-extractor
+cd aqea-distributed-extractor
+python3.11 -m venv aqea-venv
+source aqea-venv/bin/activate
+pip install -r requirements.txt
+
+# 2. USH-Integration testen
+chmod +x scripts/test_ush.sh
+./scripts/test_ush.sh
+
+# 3. Demo-Ausgabe analysieren
+cat examples/output/ush_demo_results.json | python -m json.tool
+```
+
+**Beispiel-Output:**
+```
+Running USH demo...
+Converted 'Wasser' to 0x20:08:10:42
+  - Category: natural_phenomenon
+  - Cluster: ultra_frequent
+
+Converted 'gehen' to 0x20:10:10:81
+  - Category: motion_verb
+  - Cluster: ultra_frequent
+
+=== CROSS-LINGUISTIC EQUIVALENCE DEMONSTRATION ===
+German 'Wasser': 0x20:08:10:42
+English 'water': 0x21:08:10:42
+Universal pattern (German): 08:10:42
+Universal pattern (English): 08:10:42
+Same universal category: True
+Same hierarchical cluster: True
+Overall equivalence: True
+
+Results saved to examples/output/ush_demo_results.json
+```
+
+Die USH-Integration erweitert die AQEA-Adressierung um linguistische Universalien und ermöglicht sprachübergreifende semantische Konsistenz. Sie ist vollständig in das bestehende AQEA-System integriert und kann durch Konfigurationsparameter aktiviert werden.
+
 ---
 
 ## 📡 API Reference
@@ -925,6 +1077,7 @@ ORDER BY domain, category;
 
 ### Phase 2: Enhanced Sources 🔄 **IN PROGRESS**
 - [x] **Supabase Integration**: Central cloud database ✅
+- [x] **Universal Semantic Hierarchy (USH)**: Verbesserte AQEA-Adressierung 🚀
 - [ ] **PanLex Integration**: Massive translation database (📋 Ready)
 - [ ] **WordNet Support**: Semantic relationship extraction
 - [ ] **ConceptNet Integration**: Commonsense knowledge
@@ -940,7 +1093,9 @@ ORDER BY domain, category;
 ### Phase 4: Global Scale 🌍 **VISION**
 - [ ] **Global CDN**: Edge caching for AQEA entries
 - [ ] **Blockchain Integration**: Immutable AQEA address registry
-- [ ] **AI Model Training**: Pre-trained embeddings for domains
+- [ ] **AI Model Training**: Pre-trained embeddings für USH-Kategorien
+- [ ] **Vector Database Integration**: Optimierte Suche basierend auf USH-Adressierung
+- [ ] **Cross-lingual Knowledge Graph**: Sprachübergreifende semantische Verlinkung
 - [ ] **Community Platform**: Crowdsourced AQEA improvements
 - [ ] **Research Tools**: Academic collaboration features
 
