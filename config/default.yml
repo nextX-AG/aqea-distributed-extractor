@@ -133,6 +133,10 @@ data_sources:
     batch_size: 50
     max_retries: 3
     timeout: 30
+    # Performance options - Audio extraction can slow down significantly
+    extract_audio: false     # Disable for better performance
+    extract_examples: true   # Keep examples (lightweight)
+    extract_synonyms: true   # Keep synonyms (lightweight)
     base_urls:
       de: "https://de.wiktionary.org/w/api.php"
       en: "https://en.wiktionary.org/w/api.php"

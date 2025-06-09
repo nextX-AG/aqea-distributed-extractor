@@ -3,6 +3,9 @@ AQEA Converter - Transform language data to AQEA format
 
 Converts extracted dictionary entries to AQEA 4-byte address format.
 Based on AQEA specification: AA:QQ:EE:A2
+
+UPDATED: Now uses final 0xA0-0xDF Language Family Blocks 
+from UNIVERSAL_LANGUAGE_DOMAIN_FINAL.md
 """
 
 import hashlib
@@ -11,26 +14,26 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from .address_generator import AddressGenerator
 from .schema import AQEAEntry
+from .language_mappings import (
+    encode_language, 
+    decode_language, 
+    get_language_family,
+    get_language_info,
+    UnsupportedLanguageError
+)
 
 logger = logging.getLogger(__name__)
 
 
 class AQEAConverter:
-    """Converts extracted language data to AQEA format."""
+    """Converts extracted language data to AQEA format.
     
-    # Language domain mappings (0x20-0x2F for languages)
-    LANGUAGE_DOMAINS = {
-        'de': 0x20,  # German
-        'en': 0x21,  # English
-        'fr': 0x22,  # French
-        'es': 0x23,  # Spanish
-        'it': 0x24,  # Italian
-        'pt': 0x25,  # Portuguese
-        'ru': 0x26,  # Russian
-        'zh': 0x27,  # Chinese
-        'ja': 0x28,  # Japanese
-        'ar': 0x29,  # Arabic
-    }
+    UPDATED: Now uses 0xA0-0xDF Family Blocks for language encoding:
+    - 0xA0-0xAF: Germanic (deu=0xA0, eng=0xA1, etc.)
+    - 0xB0-0xBF: Romance (fra=0xB0, spa=0xB1, etc.)
+    - 0xC0-0xCF: Slavic (rus=0xC0, pol=0xC1, etc.)
+    - 0xD0-0xDF: Asian (cmn=0xD0, jpn=0xD2, etc.)
+    """
     
     # Part of speech mappings (QQ byte)
     POS_CATEGORIES = {
@@ -83,14 +86,68 @@ class AQEAConverter:
     
     def __init__(self, config: Dict[str, Any], language: str, database=None, worker_id: str = None):
         self.config = config
-        self.language = language.lower()
-        self.address_generator = AddressGenerator(language, database, worker_id)
         
-        # Validate language support
-        if self.language not in self.LANGUAGE_DOMAINS:
-            raise ValueError(f"Language '{language}' not supported in AQEA mapping")
+        # Support both ISO 639-1 and ISO 639-3 codes
+        self.language = self._normalize_language_code(language)
+        self.address_generator = AddressGenerator(self.language, database, worker_id)
         
-        self.domain_byte = self.LANGUAGE_DOMAINS[self.language]
+        # Validate language support and get AA-byte
+        try:
+            self.domain_byte = encode_language(self.language)
+            self.language_info = get_language_info(self.language)
+            self.language_family = get_language_family(self.language)
+            
+            logger.info(f"AQEA Converter initialized for {self.language_info['name_english']} "
+                       f"(0x{self.domain_byte:02X}, {self.language_family} family)")
+            
+        except UnsupportedLanguageError as e:
+            raise ValueError(f"Language '{language}' not supported in AQEA Family Blocks: {e}")
+    
+    def _normalize_language_code(self, language: str) -> str:
+        """Convert language code to ISO 639-3 format if needed."""
+        language = language.lower().strip()
+        
+        # Mapping from common ISO 639-1 to ISO 639-3
+        iso_639_1_to_3 = {
+            'de': 'deu',  # German
+            'en': 'eng',  # English
+            'fr': 'fra',  # French
+            'es': 'spa',  # Spanish
+            'it': 'ita',  # Italian
+            'pt': 'por',  # Portuguese
+            'ru': 'rus',  # Russian
+            'zh': 'cmn',  # Chinese (Mandarin)
+            'ja': 'jpn',  # Japanese
+            'ko': 'kor',  # Korean
+            'vi': 'vie',  # Vietnamese
+            'th': 'tha',  # Thai
+            'nl': 'nld',  # Dutch
+            'sv': 'swe',  # Swedish
+            'da': 'dan',  # Danish
+            'no': 'nor',  # Norwegian
+            'is': 'isl',  # Icelandic
+            'af': 'afr',  # Afrikaans
+            'ca': 'cat',  # Catalan
+            'gl': 'glg',  # Galician
+            'ro': 'ron',  # Romanian
+            'pl': 'pol',  # Polish
+            'cs': 'ces',  # Czech
+            'sk': 'slk',  # Slovak
+            'uk': 'ukr',  # Ukrainian
+            'be': 'bel',  # Belarusian
+            'bg': 'bul',  # Bulgarian
+            'hr': 'hrv',  # Croatian
+            'sr': 'srp',  # Serbian
+            'sl': 'slv',  # Slovenian
+            'mk': 'mkd',  # Macedonian
+        }
+        
+        # Convert if it's a 2-letter code
+        if len(language) == 2 and language in iso_639_1_to_3:
+            return iso_639_1_to_3[language]
+        
+        # Assume it's already ISO 639-3 or return as-is
+        return language
         
     async def convert(self, entry: Dict[str, Any]) -> Optional[AQEAEntry]:
         """Convert a dictionary entry to AQEA format."""
@@ -222,36 +279,76 @@ class AQEAConverter:
         return description
     
     def _create_meta(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        """Create meta object with language-specific data."""
+        """Create comprehensive meta object with all available linguistic data."""
         meta = {
             'lemma': entry.get('word', ''),
             'source': 'wiktionary',
             'extraction_timestamp': datetime.now().isoformat()
         }
         
-        # Add available linguistic data
+        # === PHONETIC DATA ===
         if entry.get('ipa'):
             meta['ipa'] = entry['ipa']
         
+        if entry.get('audio'):
+            meta['audio'] = entry['audio']  # List of audio files with descriptions
+            
+        if entry.get('hyphenation'):
+            meta['hyphenation'] = entry['hyphenation']
+        
+        # === GRAMMATICAL DATA ===
         if entry.get('pos'):
             meta['pos'] = entry['pos']
         
-        if entry.get('definitions'):
-            meta['definitions'] = entry['definitions'][:3]  # Limit to 3 definitions
+        if entry.get('flexion'):
+            meta['flexion'] = entry['flexion']  # Nominativ, Genitiv, Dativ, Akkusativ forms
         
         if entry.get('forms'):
             meta['forms'] = entry['forms'][:5]  # Limit to 5 forms
         
+        # === SEMANTIC DATA ===
+        if entry.get('definitions'):
+            meta['definitions'] = entry['definitions'][:5]  # Limit to 5 definitions
+            
+        if entry.get('examples'):
+            meta['examples'] = entry['examples'][:3]  # Limit to 3 examples
+            
+        if entry.get('synonyms'):
+            meta['synonyms'] = entry['synonyms'][:5]  # Limit to 5 synonyms
+        
         if entry.get('labels'):
             meta['labels'] = entry['labels']
         
-        if entry.get('audio'):
-            meta['audio'] = entry['audio']
-        
-        # Add language-specific metadata
+        # === FREQUENCY & STATISTICS ===
         meta['frequency'] = self._estimate_frequency(entry)
+        meta['richness_score'] = self._calculate_richness_score(entry)
         
         return meta
+    
+    def _calculate_richness_score(self, entry: Dict[str, Any]) -> int:
+        """Calculate richness score based on available metadata (0-100)."""
+        score = 0
+        
+        # Basic data (20 points)
+        if entry.get('word'): score += 5
+        if entry.get('pos'): score += 5
+        if entry.get('definitions'): score += 10
+        
+        # Phonetic data (25 points)
+        if entry.get('ipa'): score += 15
+        if entry.get('audio'): score += 10
+        
+        # Grammatical data (25 points)
+        if entry.get('flexion'): score += 15
+        if entry.get('hyphenation'): score += 5
+        if entry.get('forms'): score += 5
+        
+        # Semantic data (30 points)
+        if entry.get('examples'): score += 15
+        if entry.get('synonyms'): score += 10
+        if entry.get('labels'): score += 5
+        
+        return min(score, 100)  # Cap at 100
     
     def _estimate_frequency(self, entry: Dict[str, Any]) -> int:
         """Estimate word frequency based on available data."""

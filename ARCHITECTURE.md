@@ -642,7 +642,7 @@ async def get_database(config: Dict[str, Any]):
             if _database:
                 logger.info("✅ Supabase-Datenbank erfolgreich initialisiert")
                 return _database
-        except Exception as e:
+except Exception as e:
             logger.warning(f"⚠️ Supabase-Datenbank konnte nicht initialisiert werden: {e}")
             logger.info("Fallback auf SQLite-Datenbank...")
     

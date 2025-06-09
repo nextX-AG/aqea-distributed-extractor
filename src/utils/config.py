@@ -86,18 +86,18 @@ class Config:
         """Load configuration from file and environment variables."""
         # Wenn bereits Daten direkt übergeben wurden, nichts aus Datei laden
         if self.config_file is not None:
-            # Load from file
-            if os.path.exists(self.config_file):
-                try:
-                    with open(self.config_file, 'r', encoding='utf-8') as f:
-                        self.data = yaml.safe_load(f) or {}
-                    logger.info(f"Loaded configuration from {self.config_file}")
-                except Exception as e:
-                    logger.warning(f"Failed to load config file {self.config_file}: {e}")
-                    self.data = {}
-            else:
-                logger.info(f"Config file {self.config_file} not found, using defaults")
-                self.data = self._get_default_config()
+        # Load from file
+        if os.path.exists(self.config_file):
+            try:
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    self.data = yaml.safe_load(f) or {}
+                logger.info(f"Loaded configuration from {self.config_file}")
+            except Exception as e:
+                logger.warning(f"Failed to load config file {self.config_file}: {e}")
+                self.data = {}
+        else:
+            logger.info(f"Config file {self.config_file} not found, using defaults")
+            self.data = self._get_default_config()
         else:
             logger.info("Using provided configuration data")
         

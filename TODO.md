@@ -1,603 +1,286 @@
 # 📋 AQEA Distributed Extractor - TODO & Roadmap
 
-> **🎉 System Status: VOLLSTÄNDIG FUNKTIONSFÄHIG MIT DATENBANK** ✅  
-> **🔥 NEUER MEILENSTEIN: USH-Integration (Universal Semantic Hierarchy) gestartet (Juli 2024)** 🚀
-> **Stand: Juli 2024** - HTTP-only Mode operational, Supabase-Integration vollständig funktional, Python 3.11 setup bewährt, USH-Integration in Arbeit
+> **🎉 FINAL SPECIFICATION IMPLEMENTED** ✅  
+> **🔥 NEUER MEILENSTEIN: UNIVERSAL_LANGUAGE_DOMAIN_FINAL.md mit 0xA0-0xDF Family Blocks** 🚀
+> **Stand: Juni 2025** - USH-Basis vorhanden, finale Language Domain Spezifikation bereit für Implementation
 
 ---
 
 ## 📊 **Aktueller Status Overview**
 
-### ✅ **ABGESCHLOSSEN** (Phase 1: Core System + Datenbank-Integration)
+### ✅ **ABGESCHLOSSEN** (Phase 1: Core System + USH-Basis)
 - [x] **Master Coordinator**: Läuft stabil auf Port 8080
-- [x] **Worker Fleet**: 2 Workers aktiv (worker-001, worker-002)
-- [x] **HTTP-only Mode**: Vollständig funktional ohne DB-Dependencies
-- [x] **🔥 SQLite Integration**: NEUE LOKALE DATENBANK mit persistenter Speicherung ✅
-- [x] **🔥 Ein-Klick Setup**: Optimiertes Start-Skript für SQLite-Modus ✅
-- [x] **🔥 Supabase Integration**: VOLLSTÄNDIG REPARIERT - offizielle API implementiert ✅
-- [x] **🔥 Datenbank-Speicherung**: Extrahierte Einträge werden dauerhaft gespeichert ✅
-- [x] **🔥 Fallback-Mechanismus**: Lokale JSON-Speicherung bei DB-Ausfällen ✅
-- [x] **Wiktionary Integration**: Deutsche Sprache-Extraktion funktional
-- [x] **AQEA Conversion**: 4-byte Address Generation implementiert
-- [x] **Real-time APIs**: `/api/status`, `/api/health`, `/api/work` functional
-- [x] **Work Distribution**: Alphabet-basierte Chunks (A-E, F-J, K-O, P-T, U-Z)
-- [x] **Python 3.11 Setup**: venv environment getestet und dokumentiert
-- [x] **Error Handling**: Graceful fallback und recovery
-- [x] **Documentation**: README.md und ARCHITECTURE.md vollständig
-- [x] **Critical Bugfixes**: Session Management, JSON Serialization und NoneType Fehler behoben
-- [x] **Deployment Scripts**: Systemd Service-Dateien und Multi-Server Deployment erstellt
+- [x] **Worker Fleet**: Multi-Worker-Architektur funktional
+- [x] **HTTP-only + Database Modes**: SQLite + Supabase Integration ✅
+- [x] **USH-Basis-Implementation**: Universal Semantic Hierarchy Framework ✅
+- [x] **AQEA Converter**: Mit USH-Unterstützung
+- [x] **🔥 FINALE SPEZIFIKATION**: UNIVERSAL_LANGUAGE_DOMAIN_FINAL.md ✅
+- [x] **Tests**: USH-Integration getestet
+- [x] **System-Bereinigung**: Alte Skripte archiviert, saubere Struktur
+- [x] **Alternative Konzepte**: Dokumentiert und archiviert für Zukunft
 
 ---
 
-## 🔥 **NEUER ABSCHNITT: Universal Semantic Hierarchy Integration (Juli 2024)**
+## 🔥 **PHASE 2: FINALE LANGUAGE DOMAIN IMPLEMENTATION** 🚀
 
-### 🎯 **P0.0: USH-Adressierung Implementation** 🚀 **IN PROGRESS**
-- **Status**: 🚀 **NEUES FEATURE IN ENTWICKLUNG**
-- **Feature**: Universal Semantic Hierarchy (USH) für 4-byte AQEA-Adressierung
+### 🎯 **P0.0: 0xA0-0xDF Family Blocks Implementation** 🚀 **SOFORT UMSETZBAR**
+- **Status**: 🚀 **READY TO IMPLEMENT - HÖCHSTE PRIORITÄT**
+- **Spezifikation**: UNIVERSAL_LANGUAGE_DOMAIN_FINAL.md als Source of Truth
 - **Scope**: 
-  - QQ-Byte: Universelle semantische Kategorien (linguistische Universalien)
-  - EE-Byte: Hierarchische Cluster (Häufigkeit, Abstraktheit, etc.)
-  - A2-Byte: Vector-optimierte Element-IDs für ML/AI
-- **Basis**: UNIVERSAL_LANGUAGE_DOMAIN_PLAN.md als Source of Truth
-- **Impact**: 🎯 **Sprachübergreifende Universalität** - gleiche Konzepte haben gleiche Adressen
-- **Effort**: ~2 Wochen - gestartet Juli 2024
+  - **Germanic Block (0xA0-0xAF)**: Deutsch, Englisch, Niederländisch, etc.
+  - **Romance Block (0xB0-0xBF)**: Französisch, Spanisch, Italienisch, etc.
+  - **Slavic Block (0xC0-0xCF)**: Russisch, Polnisch, Tschechisch, etc.
+  - **Asian Block (0xD0-0xDF)**: Mandarin, Japanisch, Koreanisch, etc.
+- **Impact**: 🎯 **60+ Sprachen mit direkter AA-zu-Sprache Zuordnung**
+- **Effort**: ~3-5 Tage
 
-### 🎯 **P0.1: Neue Converter-Engine** 🚀 **GEPLANT**
-- **Status**: 🚀 **DESIGN PHASE**
-- **Feature**: Machine-Learning-optimierte Konvertierung nach USH-Format
-- **Technologie**: 
+#### 📋 **P0.0 Sub-Tasks:**
+- [ ] **Language Mapping Tables**: LANGUAGE_TO_AA Dictionary implementieren
+- [ ] **Converter Update**: Von USH-experimental auf finale 0xA0-0xDF umstellen
+- [ ] **Validation**: Neue AA-Range (0xA0-0xDF) in Validatoren
+- [ ] **Tests**: Language Block Tests erstellen
+- [ ] **Integration**: Mit bestehender Worker/Master-Architektur
+
+### 🎯 **P0.1: Production-Ready Language Support** 🚀 **PHASE 2**
+- **Status**: 📋 **GEPLANT - Nach P0.0**
+- **Languages**: 
+  - **Sofort**: Deutsch (0xA0), Englisch (0xA1), Französisch (0xB0), Spanisch (0xB1)
+  - **Kurzfristig**: Weitere 20 Hauptsprachen
+  - **Mittelfristig**: Alle 60 definierten Sprachen
+- **Features**:
+  - Vollständige Wiktionary-Integration pro Sprache
+  - Cross-linguistische Äquivalenz-Suche
+  - Semantic Clustering pro Family Block
+- **Impact**: 🌍 **99.5% LLM Use-Case Abdeckung**
+- **Effort**: ~2 Wochen
+
+### 🎯 **P0.2: Cross-Linguistic Semantic Search** 🧠 **ADVANCED FEATURE**
+- **Status**: 📋 **DESIGN PHASE**
+- **Features**:
+  - Family-übergreifende Konzept-Suche
+  - Universal Concept Mappings (WATER → alle Sprachen)
   - Embedding-basierte Ähnlichkeitssuche
-  - Häufigkeitsbasierte Clustering-Algorithmen
-  - Cross-linguistische Mappings
-- **Libraries**: `sentence-transformers`, `scikit-learn`, `numpy`
-- **Impact**: 🧠 **AI-Ready Wissensrepräsentation** - optimiert für Vector-Datenbanken
-- **Effort**: ~1 Woche - Start geplant für Mitte Juli 2024
-
-## 🔥 **BISHERIGE ERFOLGE: Datenbank-Integration (Juni 2024)**
-
-### 🎯 **P0.0: SQLite Datenbank Implementation** ✅ **ABGESCHLOSSEN**
-- **Status**: ✅ **NEUE FUNKTIONALITÄT**
-- **Feature**: Lokale SQLite-Datenbank für persistente Speicherung
-- **Lösung**: Implementierung von `src/database/sqlite.py` und Integration ins System
-- **Testing**: 
-  ```bash
-  ✅ SQLite-Datenbank erfolgreich initialisiert
-  ✅ Speicherung von AQEA-Einträgen in SQLite
-  ✅ Arbeitspakete in SQLite gespeichert
-  ✅ Ein-Klick-Skript erstellt: scripts/start_with_sqlite.py
-  ```
-- **Impact**: 🎯 **Persistente Speicherung ohne Cloud-Abhängigkeit** - ideal für lokale Entwicklung
-- **Effort**: 3 Stunden - vollständig abgeschlossen
-
-### 🎯 **P0.1: Supabase Integration Reparatur** ✅ **ABGESCHLOSSEN**
-- **Status**: ✅ **VOLLSTÄNDIG BEHOBEN UND GETESTET**
-- **Problem**: Direkte PostgreSQL-Verbindungen (`asyncpg`) anstatt Supabase Python API
-- **Lösung**: Komplette Umschreibung von `src/database/supabase.py`
-- **Testing**: 
-  ```bash
-  ✅ Connection successful!
-  ✅ AQEA entry stored successfully!
-  ✅ Retrieved entry: Test Wort (Address: 0x20:01:01:01)
-  ✅ Statistics: {'aqea_entries_stored': 3}
-  ```
-- **Impact**: 🎯 **100% Datenintegrität** - keine verlorenen Extraktionen mehr
-- **Effort**: 4 Stunden - vollständig abgeschlossen
-
-### 🛠️ **P0.2: Fallback-Speicherung implementiert** ✅ **ABGESCHLOSSEN**
-- **Status**: ✅ **IMPLEMENTIERT UND GETESTET**
-- **Feature**: Automatische lokale JSON-Speicherung bei DB-Ausfällen
-- **Location**: `src/workers/worker.py` - `_store_entries()` Methode erweitert
-- **Output**: `extracted_data/aqea_entries_{worker_id}_{timestamp}.json`
-- **Impact**: 🛡️ **Robustheit** - System läuft auch bei DB-Problemen weiter
-- **Effort**: 1 Stunde - vollständig abgeschlossen
-
-### 📊 **P0.3: Deployment-Vorbereitung** ✅ **BEREIT**
-- **Status**: ✅ **COMMIT UND PUSH ERFOLGREICH**
-- **Git**: Alle Änderungen committed mit detaillierter Message
-- **Server**: Bereit für `git pull && systemctl restart` deployment
-- **Testing**: Lokale Tests erfolgreich, Production-ready
-- **Impact**: 🚀 **Sofort deploybar** auf alle Server-Instanzen
+- **Tech**: sentence-transformers, vector similarity
+- **Impact**: 🔗 **Semantische Universalität trotz Family-Blocks**
+- **Effort**: ~1 Woche
 
 ---
 
-## 🎯 **PRIORITÄT 1 - Sofort umsetzbar** (1-2 Wochen)
+## 🎯 **PRIORITÄT 1 - Sofort umsetzbar** (Diese Woche)
 
-### 🔧 **Performance & Stability Improvements**
+### 🔧 **Finale Language Domain Integration**
 
-#### P1.1: Session Management Optimierung ✅ **BEHOBEN**
-- **Status**: Implementiert und getestet
-- **Problem**: `Unclosed client session` und `Unclosed connector` warnings
-- **Solution**: 
+#### P1.1: Language Mapping Implementation 🚀 **KRITISCH**
+- **Status**: 🚀 **SOFORT STARTEN**
+- **File**: `src/aqea/language_mappings.py` (neu erstellen)
+- **Content**: 
   ```python
-  # src/workers/worker.py
-  async def cleanup_sessions(self):
-      if hasattr(self, 'session') and self.session:
-          await self.session.close()
+  LANGUAGE_TO_AA = {
+      'deu': 0xA0, 'eng': 0xA1, 'nld': 0xA2,  # Germanic
+      'fra': 0xB0, 'spa': 0xB1, 'ita': 0xB2,  # Romance
+      'rus': 0xC0, 'pol': 0xC1, 'ces': 0xC2,  # Slavic
+      'cmn': 0xD0, 'jpn': 0xD2, 'kor': 0xD3,  # Asian
+  }
   ```
-- **Impact**: Verhindert Memory Leaks bei längeren Läufen
-- **Effort**: Abgeschlossen in 2 Stunden
+- **Impact**: Basis für alle weiteren Features
+- **Effort**: 2-3 Stunden
 
-#### P1.2: AQEA Address Generation Robustness ✅ **BEHOBEN**
-- **Status**: Implementiert und getestet
-- **Problem**: `'NoneType' object has no attribute 'lower'` in converter
-- **Location**: `src/aqea/converter.py`
-- **Solution**: Null-checks für alle String-Operationen implementiert
-- **Impact**: Verhindert Crashes bei unvollständigen Wiktionary-Daten
-- **Effort**: Abgeschlossen in 1 Stunde
-
-#### P1.2b: **🔥 Supabase Database Integration** ✅ **VOLLSTÄNDIG BEHOBEN**
-- **Status**: ✅ **KRITISCHES PROBLEM GELÖST UND GETESTET**
-- **Problem**: Direkte asyncpg-Verbindungen anstatt offizielle Supabase API
-- **Location**: `src/database/supabase.py` - vollständig umgeschrieben
-- **Solution**: 
-  ```python
-  # Migration von asyncpg zu offizieller Supabase API
-  from supabase import create_client, Client
-  self.client = create_client(self.supabase_url, self.supabase_key)
-  
-  # Moderne Supabase-Methoden
-  result = self.client.table('aqea_entries').upsert(entries_data).execute()
-  ```
-- **Testing**: Vollständig getestet - Connection, Storage, Retrieval, Statistics
-- **Impact**: 🎯 **100% Datenintegrität** - keine verlorenen Extraktionen mehr
-- **Effort**: 4 Stunden - vollständig abgeschlossen
-
-#### P1.3: Graceful Shutdown Implementation 🔄 **ENHANCEMENT**
-- **Status**: Ready to implement
-- **Features**: 
-  - `SIGTERM` Handler für Worker und Master
-  - Complete current work before shutdown
-  - Save progress state
-- **Location**: `src/workers/worker.py`, `src/coordinator/master.py`
-- **Effort**: 4-6 Stunden
-
-### 📊 **Monitoring & Observability**
-
-#### P1.4: Enhanced Logging Structure 📈 **IMPROVEMENT** 
-- **Status**: Basic logging functional, needs enhancement
-- **Features**:
-  - Structured JSON logging for production
-  - Performance metrics per worker
-  - Error categorization and rates
-- **Libraries**: `structlog`, `prometheus-client`
+#### P1.2: Converter Migration 🔄 **KRITISCH**
+- **Status**: 🔄 **NACH P1.1**
+- **Files**: 
+  - `src/aqea/converter.py` - Update für neue Language Blocks
+  - `src/aqea/ush_converter.py` - Integration mit finaler Spez
+- **Changes**:
+  - `get_language_domain()` → neue 0xA0-0xDF Logik
+  - Validation für neue AA-Range
+  - Family-Block-aware Address Generation
+- **Impact**: System funktioniert mit finaler Spezifikation
 - **Effort**: 3-4 Stunden
 
-#### P1.5: Progress Persistence 💾 **FEATURE** ✅ **TEILWEISE IMPLEMENTIERT**
-- **Status**: ✅ **Lokale JSON-Speicherung implementiert**
-- **Features**:
-  - ✅ Save progress to local JSON file in HTTP-only mode
-  - ✅ Fallback-Speicherung bei DB-Ausfällen
-  - 📋 Resume extraction after restart (noch zu implementieren)
-  - 📋 Work unit checkpoint system (noch zu implementieren)
-- **Impact**: Allows longer extractions without losing progress
-- **Effort**: 50% abgeschlossen, 3-4 Stunden verbleibend
+#### P1.3: Test Update & Validation 🧪 **QUALITÄTSSICHERUNG**
+- **Status**: 📋 **NACH P1.2**
+- **Files**:
+  - `tests/test_language_domains.py` (neu)
+  - `tests/test_ush_integration.py` (update)
+- **Coverage**:
+  - Alle 4 Family Blocks testen
+  - Cross-linguistic equivalence
+  - Address validation für 0xA0-0xDF
+- **Impact**: Sicherstellung der Funktionalität
+- **Effort**: 2-3 Stunden
+
+### 📊 **System Integration & Testing**
+
+#### P1.4: End-to-End System Test 🎯 **SYSTEMTEST**
+- **Status**: 📋 **NACH P1.3**
+- **Test Scenario**:
+  ```bash
+  # Test Deutsche Extraktion mit neuen Language Blocks
+  python -m src.main start-master --language deu --workers 1
+  python -m src.main start-worker --worker-id test-001
+  
+  # Erwartung: 0xA0:xx:xx:xx Adressen für deutsche Wörter
+  ```
+- **Validation**: 
+  - Korrekte AA-Byte Generation (0xA0 für Deutsch)
+  - Datenbank-Speicherung funktional
+  - API responses korrekt
+- **Impact**: System ready für Production
+- **Effort**: 1-2 Stunden
 
 ---
 
-## 🚀 **PRIORITÄT 2 - Kurzfristig** (2-4 Wochen)
+## 🚀 **PRIORITÄT 2 - Kurzfristig** (1-2 Wochen)
 
-### 🌐 **Data Source Expansion**
+### 🌍 **Multi-Language Rollout**
 
-#### P2.1: PanLex Integration 🌍 **MAJOR FEATURE**
-- **Status**: Architecture ready, implementation needed
-- **Scope**: 
-  - Support PanLex bulk download format
-  - Translator: PanLex → AQEA format
-  - Multi-language translation pairs
-- **Impact**: Adds 80GB of translation data (40M+ translations)
-- **Files**: 
-  - `src/data_sources/panlex.py`
-  - `config/sources.yml` - PanLex configuration
-- **Effort**: 2-3 days
-
-#### P2.2: Wikidata Lexemes Integration 📚 **MAJOR FEATURE**
-- **Status**: Research phase
-- **Scope**:
-  - SPARQL queries für Lexeme
-  - Semantic relationship extraction
-  - Multi-language lexical data
-- **Impact**: Adds 3GB of structured lexical data
-- **Effort**: 3-4 days
-
-#### P2.3: Multi-Language Support Expansion 🗣️ **FEATURE**
-- **Status**: German working, framework ready
-- **Languages to add**:
-  - English (6M entries) - **NEXT**
-  - French (4M entries)
-  - Spanish (1M entries)
-  - Italian, Portuguese, Dutch
-- **Config**: `config/languages.yml` extension
-- **Effort**: 1 day per language (testing + config)
-
-### 🏗️ **Architecture Enhancements**
-
-#### P2.4: Docker Multi-Stage Optimization 🐳 **OPTIMIZATION**
-- **Status**: Basic Dockerfile exists, needs optimization
+#### P2.1: English Language Integration 🇬🇧 **MAJOR MILESTONE**
+- **Status**: 📋 **NACH P1.4**
+- **Config**: English → 0xA1 (Germanic Block)
+- **Scope**: English Wiktionary extraction (~6M entries)
 - **Features**:
-  - Multi-stage build (build/runtime separation)
-  - Smaller image sizes (<500MB target)
-  - Health checks built-in
-- **Impact**: Faster deployments, reduced costs
-- **Effort**: 1-2 days
+  - Parallele DE + EN Extraktion
+  - Cross-linguistic "water" ↔ "Wasser" mappings
+- **Impact**: Proof of concept für Multi-Language System
+- **Effort**: 2-3 Tage
 
-#### P2.5: Configuration Management Overhaul ⚙️ **REFACTOR**
-- **Status**: YAML-based, needs environment override
+#### P2.2: Romance Languages (French + Spanish) 🇫🇷🇪🇸 **FAMILY PROOF**
+- **Status**: 📋 **NACH P2.1**
+- **Config**: 
+  - French → 0xB0 (Romance Block)
+  - Spanish → 0xB1 (Romance Block)
+- **Features**: Romance Family Block validation
+- **Impact**: Proof of concept für Family-Block-System
+- **Effort**: 2-3 Tage
+
+#### P2.3: Cross-Family Semantic Mappings 🔗 **SEMANTIC UNIVERSALITY**
+- **Status**: 📋 **NACH P2.2**
 - **Features**:
-  - Environment variable override für alle configs
-  - Validation with Pydantic models
-  - Secret management (API keys, DB credentials)
-- **Security**: Separate secrets from config files
-- **Effort**: 2-3 days
+  - Universal concept database (WATER, LOVE, etc.)
+  - Family-übergreifende Suche
+  - Embedding-basierte Ähnlichkeit
+- **Tech**: sentence-transformers, cosine similarity
+- **Impact**: Semantische Suche trotz Family-Separation
+- **Effort**: 1 Woche
+
+### 🏗️ **Production Features**
+
+#### P2.4: Performance Optimization 📊 **SPEED**
+- **Status**: 📋 **PARALLEL ZU P2.1-P2.3**
+- **Features**:
+  - Family-based caching (Germanic, Romance, etc.)
+  - Batch processing für Language Blocks
+  - Memory optimization für Multi-Language
+- **Impact**: System ready für 60+ Languages
+- **Effort**: 3-4 Tage
+
+#### P2.5: API Enhancement 🔌 **USER EXPERIENCE**
+- **Status**: 📋 **PARALLEL**
+- **New Endpoints**:
+  - `/api/languages` - Supported languages list
+  - `/api/families` - Language family info
+  - `/api/translate/{word}` - Cross-linguistic search
+- **Impact**: Better developer experience
+- **Effort**: 2-3 Tage
 
 ---
 
-## 🎯 **PRIORITÄT 3 - Mittelfristig** (1-2 Monate)
+## 🌟 **PRIORITÄT 3 - Mittelfristig** (1-2 Monate)
 
-### ☁️ **Cloud & Production Readiness**
+### 🔮 **Future Extensions Implementation**
 
-#### P3.1: Load Balancer für Multiple Masters 🔄 **SCALING**
-- **Status**: Single master limitation identified
+#### P3.1: Hash-Based Extension Framework 🧬 **SCALABILITY**
+- **Status**: 📋 **KONZEPT VORHANDEN**
+- **Scope**: Implementation des Hash-basierten Systems aus FINAL.md
+- **Use Case**: Wenn 0xA0-0xDF nicht ausreicht
 - **Features**:
-  - Multiple master nodes with shared state
-  - HAProxy/nginx load balancing
-  - Master failure recovery
-- **Impact**: Eliminates single point of failure
-- **Files**: 
-  - `docker-compose.loadbalancer.yml`
-  - `config/haproxy.cfg`
-- **Effort**: 1-2 weeks
+  - 0xE0-0xFF für extended families
+  - Hybrid direct/hash lookup
+  - Automatic overflow handling
+- **Impact**: Vorbereitung für alle 7.000+ Sprachen
+- **Effort**: 2-3 Wochen
 
-#### P3.2: Auto-Scaling Implementation 📊 **AUTOMATION**
-- **Status**: Manual scaling only
+#### P3.2: Machine Learning Integration 🤖 **AI-READY**
+- **Status**: 📋 **RESEARCH PHASE**
 - **Features**:
-  - CPU/Memory-based worker scaling
-  - Cost-based scaling decisions
-  - Provider rotation based on pricing
-- **Integration**: Kubernetes HPA oder custom solution
-- **Effort**: 2-3 weeks
+  - Automatic POS classification
+  - Semantic clustering via ML
+  - Cross-lingual embedding alignment
+- **Libraries**: transformers, scikit-learn, spacy
+- **Impact**: AI-optimized AQEA addresses
+- **Effort**: 3-4 Wochen
 
-#### P3.3: Comprehensive Monitoring Dashboard 📈 **OPERATIONS**
-- **Status**: REST APIs available, dashboard needed
-- **Tech Stack**: Grafana + Prometheus + Custom metrics
+#### P3.3: Vector Database Integration 🔍 **SEARCH**
+- **Status**: 📋 **ADVANCED FEATURE**
+- **Tech**: Pinecone, Weaviate, oder Chroma
 - **Features**:
-  - Real-time extraction rates
-  - Worker health monitoring
-  - Cost tracking per provider
-  - Progress visualization
-- **Effort**: 1-2 weeks
-
-### 🔒 **Security & Production Features**
-
-#### P3.4: Authentication & Authorization 🔐 **SECURITY**
-- **Status**: No auth currently (development mode)
-- **Features**:
-  - Worker authentication with API keys
-  - Master-Worker TLS encryption
-  - Rate limiting per worker
-- **Libraries**: `python-jose`, `cryptography`
-- **Effort**: 1 week
-
-#### P3.5: API Rate Limiting & Throttling ⚡ **PRODUCTION**
-- **Status**: Currently unlimited
-- **Features**:
-  - Per-worker request limiting
-  - Adaptive throttling based on API responses
-  - Exponential backoff für failures
-- **Libraries**: `aiohttp-ratelimiter`
-- **Effort**: 3-4 days
+  - Semantic search via embeddings
+  - Multi-language similarity
+  - Concept clustering visualization
+- **Impact**: Advanced semantic search capabilities
+- **Effort**: 2-3 Wochen
 
 ---
 
-## 🌟 **PRIORITÄT 4 - Langfristig** (2-6 Monate)
+## 🎯 **IMMEDIATE NEXT ACTIONS** (Diese Woche)
 
-### 🧠 **Intelligence & ML Features**
+### Tag 1: Language Mapping Foundation 🚀
+1. **P1.1**: `src/aqea/language_mappings.py` erstellen
+2. **Testing**: Mapping-Dictionary validieren
+3. **Integration**: In bestehende Module einbinden
 
-#### P4.1: ML-Enhanced Categorization 🤖 **AI/ML**
-- **Status**: Rule-based categorization currently
-- **Features**:
-  - NLP-based part-of-speech tagging
-  - Semantic category detection
-  - Embedding-based similarity matching
-- **Libraries**: `spaCy`, `transformers`, `sentence-transformers`
-- **Impact**: Better AQEA address assignment accuracy
-- **Effort**: 3-4 weeks
+### Tag 2: Converter Migration 🔄  
+1. **P1.2**: `converter.py` auf 0xA0-0xDF umstellen
+2. **Validation**: AA-Range validation anpassen
+3. **Testing**: Basis-Funktionalität testen
 
-#### P4.2: Vector Embeddings Integration 🔗 **ADVANCED**
-- **Status**: Research phase
-- **Features**:
-  - Generate embeddings for all AQEA entries
-  - Semantic search capabilities
-  - Cross-language similarity detection
-- **Storage**: Vector database (Pinecone, Weaviate)
-- **Effort**: 4-6 weeks
+### Tag 3: System Integration 🧪
+1. **P1.3**: Test Suite aktualisieren
+2. **P1.4**: End-to-End System Test
+3. **Documentation**: Anpassungen dokumentieren
 
-#### P4.3: Automatic Quality Validation 🎯 **QA**
-- **Status**: Manual validation only
-- **Features**:
-  - Duplicate detection across languages
-  - Quality scoring für extracted entries
-  - Automatic flagging of problematic data
-- **Impact**: Higher data quality, reduced manual review
-- **Effort**: 2-3 weeks
-
-### 🌍 **Global Scale Features**
-
-#### P4.4: Global CDN Integration 🌐 **SCALING**
-- **Status**: Local storage only
-- **Features**:
-  - CloudFlare/AWS CloudFront integration
-  - Edge caching für AQEA entries
-  - Geographic distribution
-- **Impact**: Global access, reduced latency
-- **Effort**: 2-3 weeks
-
-#### P4.5: Blockchain Address Registry 🔗 **INNOVATION**
-- **Status**: Conceptual phase
-- **Features**:
-  - Immutable AQEA address registry
-  - Decentralized ownership verification
-  - Smart contracts für address allocation
-- **Tech**: Ethereum, IPFS
-- **Effort**: 2-3 months (research + implementation)
+### Tag 4-5: Multi-Language Start 🌍
+1. **P2.1**: English Language Integration starten
+2. **Performance**: Initial optimization
+3. **Planning**: Romance Languages Roadmap
 
 ---
 
-## 🛠️ **TECHNICAL DEBT & Refactoring**
-
-### Code Quality Improvements
-
-#### TD.1: Test Coverage Increase 🧪 **TESTING**
-- **Current**: ~20% test coverage
-- **Target**: 80%+ test coverage
-- **Priority**: 
-  - Unit tests für AQEA converter ✅
-  - Integration tests für API endpoints
-  - End-to-end workflow tests
-- **Libraries**: `pytest`, `pytest-asyncio`, `pytest-cov`
-- **Effort**: 1-2 weeks
-
-#### TD.2: Type Hints Completion 📝 **CODE QUALITY**
-- **Current**: Partial type hints
-- **Target**: Full type annotation
-- **Tools**: `mypy`, `pydantic`
-- **Benefits**: Better IDE support, fewer runtime errors
-- **Effort**: 3-4 days
-
-#### TD.3: Error Handling Standardization ⚠️ **ROBUSTNESS**
-- **Current**: Inconsistent error handling
-- **Target**: Standardized exception hierarchy
-- **Features**:
-  - Custom exception classes
-  - Consistent error logging
-  - Graceful degradation patterns
-- **Effort**: 1 week
-
-### Performance Optimizations
-
-#### TD.4: Memory Usage Optimization 💾 **PERFORMANCE**
-- **Current**: No memory profiling
-- **Target**: Reduced memory footprint
-- **Tools**: `memory_profiler`, `objgraph`
-- **Focus**:
-  - Session pooling optimization
-  - Garbage collection tuning
-  - Batch size optimization
-- **Effort**: 1 week
-
-#### TD.5: Database Query Optimization 🗄️ **PERFORMANCE**
-- **Current**: Basic queries
-- **Target**: Optimized queries with proper indexing
-- **Focus**:
-  - Batch inserts for AQEA entries
-  - Connection pooling tuning
-  - Query plan analysis
-- **Effort**: 3-4 days
-
----
-
-## 📋 **OPERATIONS & MAINTENANCE**
-
-### Infrastructure
-
-#### OP.1: CI/CD Pipeline Setup 🔄 **DEVOPS**
-- **Status**: Manual deployment currently
-- **Features**:
-  - GitHub Actions für automated testing
-  - Automated Docker builds
-  - Multi-environment deployments
-- **Environments**: dev, staging, production
-- **Effort**: 1 week
-
-#### OP.2: Backup & Recovery Procedures 💾 **OPERATIONS**
-- **Status**: No backup strategy
-- **Features**:
-  - Automated database backups
-  - Configuration backup
-  - Disaster recovery procedures
-- **Tools**: Supabase backup + custom scripts
-- **Effort**: 3-4 days
-
-#### OP.3: Log Aggregation & Analysis 📊 **MONITORING**
-- **Status**: Local logs only
-- **Features**:
-  - Centralized log collection (ELK stack)
-  - Log analysis and alerting
-  - Performance metrics extraction
-- **Tools**: Elasticsearch, Logstash, Kibana
-- **Effort**: 1-2 weeks
-
----
-
-## 🖥️ **PRODUCTION DEPLOYMENT**
-
-### Server Setup & Deployment
-
-#### PD.1: Systemd Service Files ✅ **ABGESCHLOSSEN**
-- **Status**: Implementiert und getestet
-- **Features**:
-  - Master service file (`aqea-master.service`)
-  - Worker service file (`aqea-worker@{id}.service`)
-  - Auto-restart bei Fehlern
-  - Abhängigkeitsmanagement
-- **Locations**: `scripts/deployment/`
-- **Effort**: Abgeschlossen in 3 Stunden
-
-#### PD.2: Multi-Server Deployment Script ✅ **ABGESCHLOSSEN**
-- **Status**: Implementiert
-- **Features**:
-  - Bash-basiertes Deployment
-  - SSH-Key basierte Authentifizierung
-  - Parallele Deployment auf mehreren Servern
-  - JSON Konfiguration für Server-Flotte
-- **Tech**: Bash + JSON
-- **Locations**: `scripts/deployment/`
-- **Effort**: Abgeschlossen in 1 Tag
-
-#### PD.3: Production Hardening 🔒 **SECURITY**
-- **Status**: Erforderlich vor Live-Gang
-- **Features**:
-  - Firewall-Konfiguration (UFW)
-  - Secure worker-master communication
-  - Rate limiting auf Netzwerkebene
-  - Non-root execution context
-- **Locations**: `scripts/deployment/`
-- **Effort**: 1 Tag
-
-### Monitoring & Operations
-
-#### PD.4: Health Check Endpoints 💓 **MONITORING**
-- **Status**: Basic vorhanden, erweitern für Production
-- **Features**:
-  - Erweiterte Systemdiagnostik
-  - Worker connectivity checks
-  - Memory/CPU reporting
-  - Systemd integration
-- **Locations**: `src/coordinator/api/health.py`
-- **Effort**: 4-6 Stunden
-
-#### PD.5: Centralized Logging 📊 **OBSERVABILITY**
-- **Status**: Dringend benötigt für Production
-- **Features**:
-  - Syslog Integration
-  - JSON structured logging
-  - Log rotation und Archivierung
-  - Alert rules für kritische Fehler
-- **Tech**: rsyslog, logrotate
-- **Effort**: 1 Tag
-
----
-
-## 🎯 **IMMEDIATE NEXT ACTIONS** (This Week)
-
-### ~~Day 1-2: Critical Bugfixes & Deployment Vorbereitung~~ ✅ **ABGESCHLOSSEN**
-1. ~~**Fix session management** - `Unclosed client session` errors~~ ✅
-2. ~~**Fix AQEA converter** - `NoneType` attribute errors~~ ✅
-3. ~~**JSON Serialization** - Datetime-Objekte für API responses~~ ✅
-4. ~~**Systemd Service Files** - Master und Worker Service-Definitionen erstellen~~ ✅
-5. ~~**🔥 Fix Supabase Integration** - Offizielle API implementieren~~ ✅
-
-### ~~Day 3-4: Deployment & Monitoring~~ ✅ **ABGESCHLOSSEN**
-5. ~~**Deployment Script** - SSH-basiertes Multi-Server Deployment~~ ✅
-6. ~~**Supabase Database** - Vollständige Integration und Testing~~ ✅
-7. ~~**Fallback Mechanism** - Lokale JSON-Speicherung implementiert~~ ✅
-
-### **🚀 AKTUELLER FOKUS: USH-Integration (Universal Semantic Hierarchy)**
-8. **USH-Mapping implementieren** - Integration der neuen Adressierungsstruktur aus UNIVERSAL_LANGUAGE_DOMAIN_PLAN.md
-9. **AQEA Converter Upgrade** - Erweiterung des Konverters für neue QQ/EE/A2-Kategorien
-10. **Embedding-basierte ID-Generierung** - Optimierte A2-Generierung für Vector-Datenbanken
-11. **Cross-Linguistisches Mapping** - Gleiches Konzept = gleiche QQ:EE:A2 über Sprachgrenzen
-
-### **Day 5-7: USH-Integration & Optimierung**  
-12. **Backward Compatibility** - Unterstützung für alte und neue Adressen
-13. **ML-Kategorie-Erkennung** - Automatische Kategorisierung für QQ-Byte
-14. **Häufigkeits-Cluster** - EE-Byte-Optimierung nach Häufigkeit
-15. **Production Testing** - Validierung mit realen Sprachdaten
-
----
-
-## 📈 **SUCCESS METRICS**
+## 📊 **SUCCESS METRICS**
 
 ### Technical KPIs
-- **Uptime**: >99.5% availability target
-- **Performance**: 800+ entries/minute sustained
-- **Error Rate**: <1% failed extractions
-- **Recovery Time**: <5 minutes for worker failures
+- **Language Coverage**: 4+ languages by end of week
+- **Address Generation**: 100% success rate für 0xA0-0xDF
+- **Performance**: <5ms lookup time
+- **Quality**: >95% correct AA-byte assignment
 
-### Business KPIs  
-- **Cost Efficiency**: <€50 für complete German extraction
-- **Time to Market**: German → 18 hours, English → 3 days
-- **Data Quality**: >95% accurate AQEA addresses
-- **Scalability**: Support 50+ concurrent workers
-
----
-
-## 🚨 **KNOWN ISSUES & LIMITATIONS**
-
-### Current Limitations
-1. **Single Master**: No failover für master coordinator
-2. **Memory Only in HTTP Mode**: Gelöst durch SQLite und Supabase
-3. **Manual Scaling**: No automatic worker scaling
-4. **Basic Auth**: No production authentication
-5. **Limited Sources**: Only Wiktionary currently functional
-
-### Technical Debt
-1. ~~**Session Management**: Memory leaks durch `Unclosed client session` (P1.1)~~ ✅
-2. **Error Handling**: Inconsistent across modules
-3. **Test Coverage**: Insufficient für production confidence
-4. **Type Safety**: Missing type hints in critical paths
-5. **Configuration**: Hardcoded values scattered
-
-### Recently Identified Issues
-1. ~~**LanguageConfig Attribute Error**: `.get()` vs `.alphabet_ranges` direkt~~ ✅
-2. ~~**JSON Serialization**: Datetime objects nicht JSON-serialisierbar in API responses~~ ✅
-3. **Database Connection Handling**: Fallback bei DB-Fehlern nicht konsistent
-4. ~~**NoneType Errors**: `'NoneType' object has no attribute 'lower'` in AQEA converter~~ ✅
-5. **Docker Build Issues**: Syntax-Fehler in Dockerfile (untersuchungswürdig)
+### System KPIs  
+- **Extraction Rate**: >500 entries/minute
+- **Database**: 100% storage success
+- **API**: <10ms response time
+- **Uptime**: >99% system availability
 
 ---
 
-## 🎉 **CELEBRATION MILESTONES**
+## 🔚 **LONG-TERM VISION**
 
-### 🏆 **Achieved Milestones**
-- ✅ **First Distributed Extraction**: 2 workers processing in parallel
-- ✅ **HTTP-only Mode**: Development-friendly setup
-- ✅ **Real AQEA Addresses**: Generated from Wiktionary data
-- ✅ **Python 3.11 Compatibility**: Modern runtime support
-- ✅ **Documentation Excellence**: Comprehensive architecture docs
-- ✅ **Successful Worker Completion**: Alle Work-Units erfolgreich durchgelaufen
-- ✅ **Error Resilience**: HTTP-only Mode bewährt für schnelle Tests
-- ✅ **🔥 DATENBANK-INTEGRATION**: Supabase vollständig funktional - Connection, Storage, Retrieval ✅
-- ✅ **🔥 100% DATENINTEGRITÄT**: Keine verlorenen Extraktionen mehr ✅
-- ✅ **🔥 PRODUCTION-READY DATABASE**: Offizielle Supabase API implementiert ✅
-- ✅ **🔥 ROBUSTE FALLBACKS**: Lokale JSON-Speicherung bei DB-Ausfällen ✅
+### 6 Months: Full Family Block Implementation
+- **60+ Languages**: Alle definierten Sprachen aktiv
+- **Cross-Linguistic**: Vollständige semantische Äquivalenz
+- **Production**: Multi-cloud deployment ready
 
-### 🎯 **Upcoming Milestones**
-- 🎯 **Server Deployment**: Externe Server-Infrastruktur aufbauen → **BEREIT FÜR DEPLOYMENT** ✅
-- 🎯 **24/7 Stability**: 7-day continuous extraction run
-- 🎯 **Multi-Language**: English + German concurrent processing  
-- 🎯 **Production Ready**: Authentication + monitoring dashboard
-- 🎯 **100K Entries**: First major extraction milestone → **MIT DATENBANK JETZT MÖGLICH** ✅
-- 🎯 **Multi-Cloud**: Deploy across 3 cloud providers
+### 12 Months: Hash-Based Extension
+- **7.000+ Languages**: Alle dokumentierten Sprachen
+- **AI Integration**: ML-optimized address generation
+- **Global Scale**: CDN + Vector database integration
+
+### 24 Months: Universal Knowledge Graph
+- **All Domains**: Languages integriert mit allen AQEA-Domains
+- **Blockchain**: Decentralized address registry
+- **Research Platform**: Academic collaboration features
 
 ---
 
-## 📞 **Team & Responsibilities**
-
-### Current Team Structure
-- **Lead Developer**: @sayedamirkarim
-- **Architecture**: @nextX-AG team
-- **Documentation**: @sayedamirkarim  
-- **Testing**: Community contributions welcome
-
-### Seeking Contributors For:
-- **DevOps Engineer**: CI/CD pipeline setup
-- **ML Engineer**: Semantic categorization features
-- **Frontend Developer**: Monitoring dashboard
-- **Data Engineer**: New data source integrations
-- **QA Engineer**: Test automation framework
-
----
-
-**💡 Want to contribute? Pick any P1 or P2 item and create a GitHub issue!**
-
-**🚀 System is operational and ready for the next phase of development!** 
+*Last Updated: Juni 2025*  
+*Next Review: Nach P1.4 completion*  
+*Status: READY FOR FINAL IMPLEMENTATION* 🚀 

@@ -86,6 +86,55 @@ class MasterCoordinator:
         self.total_estimated_entries = 0
         self.total_processed_entries = 0
         
+    def _get_language_config_with_fallback(self, language: str):
+        """Get language configuration with ISO 639-1/639-3 fallback support."""
+        # First try direct lookup
+        config = self.config.get_language_config(language)
+        if config:
+            return config
+        
+        # If not found and language is ISO 639-3, try converting to ISO 639-1
+        iso_639_3_to_1 = {
+            'deu': 'de',   # German
+            'eng': 'en',   # English
+            'fra': 'fr',   # French
+            'spa': 'es',   # Spanish
+            'ita': 'it',   # Italian
+            'por': 'pt',   # Portuguese
+            'rus': 'ru',   # Russian
+            'cmn': 'zh',   # Chinese (Mandarin)
+            'jpn': 'ja',   # Japanese
+            'kor': 'ko',   # Korean
+            'vie': 'vi',   # Vietnamese
+            'tha': 'th',   # Thai
+            'nld': 'nl',   # Dutch
+            'swe': 'sv',   # Swedish
+            'dan': 'da',   # Danish
+            'nor': 'no',   # Norwegian
+            'isl': 'is',   # Icelandic
+            'afr': 'af',   # Afrikaans
+            'cat': 'ca',   # Catalan
+            'glg': 'gl',   # Galician
+            'ron': 'ro',   # Romanian
+            'pol': 'pl',   # Polish
+            'ces': 'cs',   # Czech
+            'slk': 'sk',   # Slovak
+            'ukr': 'uk',   # Ukrainian
+            'bel': 'be',   # Belarusian
+            'bul': 'bg',   # Bulgarian
+            'hrv': 'hr',   # Croatian
+            'srp': 'sr',   # Serbian
+            'slv': 'sl',   # Slovenian
+            'mkd': 'mk',   # Macedonian
+        }
+        
+        if language in iso_639_3_to_1:
+            iso_639_1 = iso_639_3_to_1[language]
+            logger.info(f"Converting language code {language} → {iso_639_1} for configuration lookup")
+            return self.config.get_language_config(iso_639_1)
+        
+        return None
+        
     async def create_work_plan(self) -> List[WorkUnit]:
         """Create work units based on language and source configuration."""
         # Check if we should load from a custom work units file
@@ -95,8 +144,8 @@ class MasterCoordinator:
         # Otherwise, use the default configuration
         work_units = []
         
-        # Get language configuration
-        lang_config = self.config.get_language_config(self.language)
+        # Get language configuration - support both ISO 639-1 and ISO 639-3
+        lang_config = self._get_language_config_with_fallback(self.language)
         if not lang_config:
             raise ValueError(f"No configuration found for language: {self.language}")
         
@@ -517,7 +566,7 @@ class MasterCoordinator:
                 
         except asyncio.CancelledError:
             logger.info("Master coordinator shutting down")
-            await runner.cleanup()
+            await runner.cleanup() 
 
     async def initialize_db(self):
         """Initialize database connection."""

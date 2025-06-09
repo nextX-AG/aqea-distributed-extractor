@@ -85,12 +85,12 @@ class AddressGenerator:
             base_id = suggested_a2
         else:
             # Generate deterministic starting point based on word
-            word_hash = hashlib.md5(word.encode('utf-8')).hexdigest()
-            base_id = int(word_hash[:2], 16)
-            
-            # Ensure we don't use reserved values (0xFE, 0xFF)
-            if base_id >= 0xFE:
-                base_id = base_id % 0xFE
+                word_hash = hashlib.md5(word.encode('utf-8')).hexdigest()
+                base_id = int(word_hash[:2], 16)
+        
+        # Ensure we don't use reserved values (0xFE, 0xFF)
+        if base_id >= 0xFE:
+            base_id = base_id % 0xFE
         
         category_key = (aa, qq, ee)
         category_key_str = f"{aa:02X}:{qq:02X}:{ee:02X}"

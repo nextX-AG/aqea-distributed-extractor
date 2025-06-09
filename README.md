@@ -361,7 +361,7 @@ MIT License - Siehe [LICENSE](LICENSE) für Details.
 
 ---
 
-**🎉 System ist operational und bereit für Produktionseinsatz! 🚀**
+**🎉 System ist operational und bereit für Produktionseinsatz! 🚀** 
 
 ## Installation
 

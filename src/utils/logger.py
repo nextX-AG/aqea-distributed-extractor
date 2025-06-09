@@ -84,11 +84,11 @@ def setup_logging(level = "DEBUG"):
     # Convert string level to logging level
     if isinstance(level, int):
         numeric_level = level
-    else:
+        else:
         numeric_level = getattr(logging, level.upper(), None)
         if not isinstance(numeric_level, int):
             raise ValueError(f"Invalid log level: {level}")
-    
+        
     # Setup basic configuration
     logging.basicConfig(
         level=numeric_level,
@@ -230,7 +230,7 @@ def log_error_with_context(
             'context': context or {},
             'event_type': 'error'
         }
-    )
+    ) 
 
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:

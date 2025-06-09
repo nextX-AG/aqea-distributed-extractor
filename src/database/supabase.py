@@ -90,12 +90,12 @@ class SupabaseDatabase:
                 for i in range(0, len(entries_data), batch_size):
                     batch = entries_data[i:i+batch_size]
                     try:
-                        # Batch insert with upsert
-                        result = self.client.table('aqea_entries').upsert(
+                # Batch insert with upsert
+                result = self.client.table('aqea_entries').upsert(
                             batch,
-                            on_conflict='address'
-                        ).execute()
-                        
+                    on_conflict='address'
+                ).execute()
+                
                         batch_inserted = len(result.data) if result.data else len(batch)
                         inserted += batch_inserted
                         logger.info(f"✅ Stored batch of {batch_inserted} AQEA entries to Supabase")

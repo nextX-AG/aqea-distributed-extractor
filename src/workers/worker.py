@@ -321,7 +321,7 @@ class ExtractionWorker:
             except Exception as backup_error:
                 logger.critical(f"❌❌ Kritischer Fehler - Datenverlust: {backup_error}")
             
-            return {'inserted': 0, 'errors': [str(e)]}
+                return {'inserted': 0, 'errors': [str(e)]}
     
     async def work_loop(self):
         """Main work loop - request and process work units."""
