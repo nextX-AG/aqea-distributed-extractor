@@ -15,11 +15,11 @@ from datetime import datetime
 from .address_generator import AddressGenerator
 from .schema import AQEAEntry
 from .language_mappings import (
-    encode_language, 
-    decode_language, 
-    get_language_family,
-    get_language_info,
-    UnsupportedLanguageError
+    get_language_domain,
+    get_language_name,
+    get_language_family_by_code,
+    is_valid_language_domain,
+    ISO_639_1_TO_3
 )
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class AQEAConverter:
     - 0xA0-0xAF: Germanic (deu=0xA0, eng=0xA1, etc.)
     - 0xB0-0xBF: Romance (fra=0xB0, spa=0xB1, etc.)
     - 0xC0-0xCF: Slavic (rus=0xC0, pol=0xC1, etc.)
-    - 0xD0-0xDF: Asian (cmn=0xD0, jpn=0xD2, etc.)
+    - 0xD0-0xDF: Asian (cmn=0xD0, jpn=0xD1, etc.)
     """
     
     # Part of speech mappings (QQ byte)
@@ -92,59 +92,23 @@ class AQEAConverter:
         self.address_generator = AddressGenerator(self.language, database, worker_id)
         
         # Validate language support and get AA-byte
-        try:
-            self.domain_byte = encode_language(self.language)
-            self.language_info = get_language_info(self.language)
-            self.language_family = get_language_family(self.language)
-            
-            logger.info(f"AQEA Converter initialized for {self.language_info['name_english']} "
-                       f"(0x{self.domain_byte:02X}, {self.language_family} family)")
-            
-        except UnsupportedLanguageError as e:
-            raise ValueError(f"Language '{language}' not supported in AQEA Family Blocks: {e}")
+        self.domain_byte = get_language_domain(self.language)
+        if not self.domain_byte or not is_valid_language_domain(self.domain_byte):
+            raise ValueError(f"Language '{language}' not supported in AQEA Family Blocks (0xA0-0xDF)")
+        
+        self.language_name = get_language_name(self.domain_byte)
+        self.language_family = get_language_family_by_code(self.language)
+        
+        logger.info(f"AQEA Converter initialized for {self.language_name} "
+                   f"(0x{self.domain_byte:02X}, {self.language_family} family)")
     
     def _normalize_language_code(self, language: str) -> str:
         """Convert language code to ISO 639-3 format if needed."""
         language = language.lower().strip()
         
-        # Mapping from common ISO 639-1 to ISO 639-3
-        iso_639_1_to_3 = {
-            'de': 'deu',  # German
-            'en': 'eng',  # English
-            'fr': 'fra',  # French
-            'es': 'spa',  # Spanish
-            'it': 'ita',  # Italian
-            'pt': 'por',  # Portuguese
-            'ru': 'rus',  # Russian
-            'zh': 'cmn',  # Chinese (Mandarin)
-            'ja': 'jpn',  # Japanese
-            'ko': 'kor',  # Korean
-            'vi': 'vie',  # Vietnamese
-            'th': 'tha',  # Thai
-            'nl': 'nld',  # Dutch
-            'sv': 'swe',  # Swedish
-            'da': 'dan',  # Danish
-            'no': 'nor',  # Norwegian
-            'is': 'isl',  # Icelandic
-            'af': 'afr',  # Afrikaans
-            'ca': 'cat',  # Catalan
-            'gl': 'glg',  # Galician
-            'ro': 'ron',  # Romanian
-            'pl': 'pol',  # Polish
-            'cs': 'ces',  # Czech
-            'sk': 'slk',  # Slovak
-            'uk': 'ukr',  # Ukrainian
-            'be': 'bel',  # Belarusian
-            'bg': 'bul',  # Bulgarian
-            'hr': 'hrv',  # Croatian
-            'sr': 'srp',  # Serbian
-            'sl': 'slv',  # Slovenian
-            'mk': 'mkd',  # Macedonian
-        }
-        
-        # Convert if it's a 2-letter code
-        if len(language) == 2 and language in iso_639_1_to_3:
-            return iso_639_1_to_3[language]
+        # Convert if it's a 2-letter code using the centralized mapping
+        if len(language) == 2 and language in ISO_639_1_TO_3:
+            return ISO_639_1_TO_3[language]
         
         # Assume it's already ISO 639-3 or return as-is
         return language
@@ -191,7 +155,7 @@ class AQEAConverter:
             if word is None:
                 word = ''
             
-            # Domain byte (AA) - Language
+            # Domain byte (AA) - Language (using new Family Block system)
             aa = self.domain_byte
             
             # Category byte (QQ) - Part of Speech
@@ -261,16 +225,15 @@ class AQEAConverter:
     def _create_description(self, entry: Dict[str, Any]) -> str:
         """Create English description for the entry."""
         word = entry.get('word', '')
-        language = entry.get('language', self.language)
         pos = entry.get('pos', 'word')
         definitions = entry.get('definitions', [])
         
-        # Create base description
+        # Create base description using language name from mappings
         if definitions:
             main_def = definitions[0][:100]  # Limit length
-            description = f"{language.title()} {pos} '{word}'. {main_def}"
+            description = f"{self.language_name} {pos} '{word}'. {main_def}"
         else:
-            description = f"{language.title()} {pos} '{word}'"
+            description = f"{self.language_name} {pos} '{word}'"
         
         # Add IPA if available
         if entry.get('ipa'):
@@ -283,7 +246,10 @@ class AQEAConverter:
         meta = {
             'lemma': entry.get('word', ''),
             'source': 'wiktionary',
-            'extraction_timestamp': datetime.now().isoformat()
+            'extraction_timestamp': datetime.now().isoformat(),
+            'language': self.language,
+            'language_name': self.language_name,
+            'language_family': self.language_family
         }
         
         # === PHONETIC DATA ===
@@ -353,6 +319,8 @@ class AQEAConverter:
     def _estimate_frequency(self, entry: Dict[str, Any]) -> int:
         """Estimate word frequency based on available data."""
         word = entry.get('word', '')
+        if word is None:
+            word = ''
         
         # Simple heuristics for frequency estimation
         # In a real implementation, this would use actual frequency data
@@ -366,13 +334,14 @@ class AQEAConverter:
             base_frequency += 200
         
         # Common parts of speech are more frequent
-        pos = entry.get('pos', '').lower()
-        if pos in ['noun', 'verb', 'adjective']:
+        pos = entry.get('pos', '')
+        if pos is not None and pos.lower() in ['noun', 'verb', 'adjective']:
             base_frequency += 300
         
         # Words with many definitions are often more frequent
         definitions = entry.get('definitions', [])
-        base_frequency += len(definitions) * 50
+        if definitions is not None:
+            base_frequency += len(definitions) * 50
         
         return min(base_frequency, 9999)  # Cap at 9999
     

@@ -125,6 +125,7 @@ class WiktionaryDataSource:
         continue_token = None
         count = 0
         max_pages = 100  # DRASTISCH reduziert für Testing 
+        max_retries = 5  # Anzahl der Wiederholungsversuche
         
         logger.info(f"Fetching pages from {start_char} to {end_char} in {language} Wiktionary")
         
@@ -142,30 +143,44 @@ class WiktionaryDataSource:
             if continue_token:
                 params['apcontinue'] = continue_token
             
-            try:
-                async with self.session.get(api_url, params=params) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        
-                        if 'query' in data and 'allpages' in data['query']:
-                            pages = data['query']['allpages']
-                            for page in pages:
-                                title = page['title']
-                                if self._is_valid_entry_title(title):
-                                    all_pages.append(title)
-                                    count += 1
+            retry_count = 0
+            success = False
+            
+            while retry_count < max_retries and not success:
+                try:
+                    async with self.session.get(api_url, params=params, timeout=30) as response:
+                        if response.status == 200:
+                            data = await response.json()
                             
-                            # QUICK FIX: Stoppe nach ersten Batch für Testing
-                            logger.info(f"TESTING MODE: Stopping after first batch ({len(pages)} pages)")
-                            break  # Stoppe nach erstem Batch
+                            # Überprüfe, ob data nicht None ist und die erwartete Struktur hat
+                            if data is not None and 'query' in data and 'allpages' in data['query']:
+                                pages = data['query']['allpages']
+                                for page in pages:
+                                    title = page['title']
+                                    if self._is_valid_entry_title(title):
+                                        all_pages.append(title)
+                                        count += 1
+                                
+                                # QUICK FIX: Stoppe nach ersten Batch für Testing
+                                logger.info(f"TESTING MODE: Stopping after first batch ({len(pages)} pages)")
+                                success = True
+                                break  # Stoppe nach erstem erfolgreichen Batch
+                            else:
+                                logger.warning(f"Unexpected API response format: {data}")
+                                retry_count += 1
+                                await asyncio.sleep(2)  # Längere Wartezeit bei fehlerhafter Antwort
                         else:
-                            break
-                    else:
-                        logger.warning(f"Error status {response.status} fetching pages")
-                        break
-            except Exception as e:
-                logger.error(f"Error getting pages: {e}")
-                await asyncio.sleep(1)  # Längere Wartezeit bei Fehlern
+                            logger.warning(f"Error status {response.status} fetching pages")
+                            retry_count += 1
+                            await asyncio.sleep(2)  # Längere Wartezeit bei HTTP-Fehlern
+                except Exception as e:
+                    logger.error(f"Error getting pages: {e}")
+                    retry_count += 1
+                    await asyncio.sleep(2)  # Längere Wartezeit bei Exceptions
+            
+            if not success:
+                logger.error(f"Failed to retrieve pages after {max_retries} attempts. Aborting.")
+                break
         
         logger.info(f"Found {len(all_pages)} valid pages in range {start_char}-{end_char}")
         return all_pages

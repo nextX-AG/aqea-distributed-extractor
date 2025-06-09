@@ -191,7 +191,10 @@ class WiktionaryDumpExtractor:
             Dictionary mit extrahierten Informationen oder None,
             wenn der Eintrag nicht relevant ist
         """
-        if text is None:
+        # Prüfe auf None-Werte oder leere Texte
+        if text is None or not text.strip() or title is None or not title.strip():
+            if self.debug:
+                logger.debug(f"Überspringe Eintrag mit leerem Titel oder Text: {title}")
             return None
             
         # Debug: Sammle einige Beispielseiten
@@ -231,230 +234,237 @@ class WiktionaryDumpExtractor:
             'examples': []  # Beispiele hinzugefügt
         }
         
-        # Extrahiere Wortart (Part of Speech)
-        if self.language == 'de':
-            # Suche nach {{Wortart|...}} mit verschiedenen Mustern
-            pos_patterns = [
-                r'\{\{Wortart\|([^|{}]+)',                  # {{Wortart|Substantiv
-                r'\{\{Wortart\|([^|{}]+)\|Deutsch\}\}',     # {{Wortart|Substantiv|Deutsch}}
-                r'===\s*\{\{Wortart\|([^|{}]+)',            # === {{Wortart|Substantiv
-                r'Deutsch\s+([A-Za-zÄÖÜäöüß]+)\s+Übersicht' # Deutsch Substantiv Übersicht
-            ]
-            
-            for pattern in pos_patterns:
-                pos_match = re.search(pattern, text)
-                if pos_match:
-                    german_pos = pos_match.group(1).strip()
-                    break
-            else:
-                # Wenn keine direkte Wortart gefunden wurde, versuchen wir andere Hinweise
-                if "{{Deutsch Substantiv Übersicht" in text:
-                    german_pos = "Substantiv"
-                elif "{{Deutsch Verb Übersicht" in text:
-                    german_pos = "Verb"
-                elif "{{Deutsch Adjektiv Übersicht" in text:
-                    german_pos = "Adjektiv"
-                elif "{{Deutsch Adverb Übersicht" in text:
-                    german_pos = "Adverb"
-                elif "{{Deutsch Deklinierte Form" in text or "{{Wortart|Deklinierte Form" in text:
-                    german_pos = "Deklinierte Form"
-                elif "{{Deutsch Konjugierte Form" in text or "{{Wortart|Konjugierte Form" in text:
-                    german_pos = "Konjugierte Form"
-                elif "{{Deutsch Partizip" in text or "{{Wortart|Partizip" in text:
-                    german_pos = "Partizip"
-                else:
-                    german_pos = "Unbekannt"  # Standardwert, wenn nichts gefunden wird
-            
-            if german_pos:
-                # Übersetze deutsche Wortarten ins Englische
-                pos_mapping = {
-                    'Substantiv': 'noun',
-                    'Verb': 'verb',
-                    'Adjektiv': 'adjective',
-                    'Adverb': 'adverb',
-                    'Pronomen': 'pronoun',
-                    'Präposition': 'preposition',
-                    'Konjunktion': 'conjunction',
-                    'Artikel': 'article',
-                    'Numerale': 'numeral',
-                    'Interjektion': 'interjection',
-                    'Redewendung': 'phrase',
-                    'Sprichwort': 'proverb',
-                    'Abkürzung': 'abbreviation',
-                    'Toponym': 'toponym',
-                    'Eigenname': 'proper_noun',
-                    'Deklinierte Form': 'inflected_noun',
-                    'Konjugierte Form': 'inflected_verb',
-                    'Partizip': 'participle',
-                    'Unbekannt': 'unknown'
-                }
-                entry['pos'] = pos_mapping.get(german_pos, 'unknown')
-                
-                # HINZUGEFÜGT: Wenn es eine Deklinierte oder Konjugierte Form ist, 
-                # setzen wir die Grundform als Metadaten
-                if german_pos in ['Deklinierte Form', 'Konjugierte Form', 'Partizip']:
-                    grundform_match = re.search(r'\[\[([^\]]+)\]\]', text)
-                    if grundform_match:
-                        entry['base_form'] = grundform_match.group(1).strip()
-                
-                # Debug-Ausgabe
-                if self.debug and entry['pos'] != 'unknown':
-                    logger.debug(f"DEBUG: Wortart gefunden für {title}: {german_pos} -> {entry['pos']}")
-        
-        # Extrahiere IPA-Aussprache
-        ipa_match = None
-        if self.language == 'de':
-            # Verschiedene Muster für die IPA-Aussprache im deutschen Wiktionary
-            ipa_patterns = [
-                r'\{\{Lautschrift\}\}\s*\[\[([^\]]+)\]\]',                # {{Lautschrift}} [[ˈvaːsɐ]]
-                r'\{\{IPA\}\}\s*\{\{Lautschrift\|([^}]+)',                # {{IPA}} {{Lautschrift|ˈvaːsɐ}}
-                r'\{\{IPA\}\}\s*\[\[([^\]]+)\]\]',                        # {{IPA}} [[ˈvaːsɐ]]
-                r':{{IPA}}.*?{{Lautschrift\|([^}]+)}}',                   # :{{IPA}}...{{Lautschrift|ˈvaːsɐ}}
-                r'{{Lautschrift\|([^}]+)}}',                              # {{Lautschrift|ˈvaːsɐ}}
-                r':\[\[IPA\]\]: \[\[([^\]]+)\]\]'                         # :[[IPA]]: [[ˈvaːsɐ]]
-            ]
-            
-            for pattern in ipa_patterns:
-                ipa_match = re.search(pattern, text)
-                if ipa_match:
-                    break
-        
-        if ipa_match:
-            entry['ipa'] = ipa_match.group(1).strip()
-            
-            # Debug-Ausgabe
-            if self.debug:
-                logger.debug(f"DEBUG: IPA gefunden für {title}: {entry['ipa']}")
-        
-        # Extrahiere Definitionen - verschiedene Methoden
-        definitions = []
-        
-        if self.language == 'de':
-            # Methode 1: Bereich zwischen {{Bedeutungen}} und dem nächsten Abschnitt
-            bedeutungen_section = False
-            for line in text.split('\n'):
-                if '{{Bedeutungen}}' in line:
-                    bedeutungen_section = True
-                    continue
-                # Prüfe auf Ende des Bedeutungs-Abschnitts (neuer Abschnitt oder neue Vorlage)
-                elif bedeutungen_section and (
-                    line.strip().startswith('====') or 
-                    line.strip().startswith('===') or
-                    (line.strip().startswith('{{') and not line.strip().startswith('{{#'))):
-                    bedeutungen_section = False
-                    continue
-                
-                if bedeutungen_section and line.strip().startswith(':'):
-                    # Entferne führendes : und Leerzeichen
-                    definition_line = line.strip()[1:].strip()
-                    
-                    # Bereinige Wiki-Markup
-                    definition = re.sub(r'\[\[([^|\]]+\|)?([^\]]+)\]\]', r'\2', definition_line)
-                    definition = re.sub(r'\{\{[^}]+\}\}', '', definition)
-                    definition = re.sub(r'<[^>]+>', '', definition)
-                    definition = re.sub(r'\s+', ' ', definition).strip()
-                    
-                    # Entferne Referenzen wie <ref>...</ref>
-                    definition = re.sub(r'<ref>.*?</ref>', '', definition)
-                    definition = re.sub(r'<ref .*?</ref>', '', definition)
-                    definition = re.sub(r'<ref .*?/>', '', definition)
-                    
-                    if definition:
-                        definitions.append(definition)
-                        
-                        # Debug-Ausgabe
-                        if self.debug and len(definitions) == 1:
-                            logger.debug(f"DEBUG: Definition gefunden für {title}: {definition}")
-            
-            # Methode 2: Direkte Suche nach nummerierten Definitionen mit einem regulären Ausdruck
-            if not definitions:
-                # Suche nach Definitionen im Format [1] Text oder :[1] Text
-                bedeutungen_pattern = r'(?:\:)?\[\d+\]\s*([^\n\[\]]+)'
-                for match in re.finditer(bedeutungen_pattern, text):
-                    definition = match.group(1).strip()
-                    
-                    # Bereinige Wiki-Markup wie oben
-                    definition = re.sub(r'\[\[([^|\]]+\|)?([^\]]+)\]\]', r'\2', definition)
-                    definition = re.sub(r'\{\{[^}]+\}\}', '', definition)
-                    definition = re.sub(r'<[^>]+>', '', definition)
-                    definition = re.sub(r'\s+', ' ', definition).strip()
-                    
-                    if definition:
-                        definitions.append(definition)
-                        
-                        # Debug-Ausgabe
-                        if self.debug and len(definitions) == 1:
-                            logger.debug(f"DEBUG: Definition (Methode 2) gefunden für {title}: {definition}")
-            
-            # Methode 3: Nach typischen Definition-Markierungen suchen, die nicht unbedingt mit {{Bedeutungen}} gekennzeichnet sind
-            if not definitions:
-                definition_patterns = [
-                    r':\s*\[\d+\]\s*([^\n\[\]]+)',         # : [1] Definition
-                    r':\[\d+\]\s*([^\n\[\]]+)',           # :[1] Definition
-                    r'\[\d+\]\s*([^\n\[\]]+)',            # [1] Definition (ohne :)
-                    r'{{Bedeutung\|([^}]+)}}',            # {{Bedeutung|Definition}}
-                    r'Definition:\s*([^\n]+)',            # Definition: Text
-                    r'Bedeutung:\s*([^\n]+)'              # Bedeutung: Text
+        try:
+            # Extrahiere Wortart (Part of Speech)
+            if self.language == 'de':
+                # Suche nach {{Wortart|...}} mit verschiedenen Mustern
+                pos_patterns = [
+                    r'\{\{Wortart\|([^|{}]+)',                  # {{Wortart|Substantiv
+                    r'\{\{Wortart\|([^|{}]+)\|Deutsch\}\}',     # {{Wortart|Substantiv|Deutsch}}
+                    r'===\s*\{\{Wortart\|([^|{}]+)',            # === {{Wortart|Substantiv
+                    r'Deutsch\s+([A-Za-zÄÖÜäöüß]+)\s+Übersicht' # Deutsch Substantiv Übersicht
                 ]
                 
-                for pattern in definition_patterns:
-                    for match in re.finditer(pattern, text):
-                        definition = match.group(1).strip()
+                german_pos = None
+                for pattern in pos_patterns:
+                    pos_match = re.search(pattern, text)
+                    if pos_match:
+                        german_pos = pos_match.group(1).strip()
+                        break
+                
+                if not german_pos:
+                    # Wenn keine direkte Wortart gefunden wurde, versuchen wir andere Hinweise
+                    if "{{Deutsch Substantiv Übersicht" in text:
+                        german_pos = "Substantiv"
+                    elif "{{Deutsch Verb Übersicht" in text:
+                        german_pos = "Verb"
+                    elif "{{Deutsch Adjektiv Übersicht" in text:
+                        german_pos = "Adjektiv"
+                    elif "{{Deutsch Adverb Übersicht" in text:
+                        german_pos = "Adverb"
+                    elif "{{Deutsch Deklinierte Form" in text or "{{Wortart|Deklinierte Form" in text:
+                        german_pos = "Deklinierte Form"
+                    elif "{{Deutsch Konjugierte Form" in text or "{{Wortart|Konjugierte Form" in text:
+                        german_pos = "Konjugierte Form"
+                    elif "{{Deutsch Partizip" in text or "{{Wortart|Partizip" in text:
+                        german_pos = "Partizip"
+                    else:
+                        german_pos = "Unbekannt"  # Standardwert, wenn nichts gefunden wird
+                
+                if german_pos:
+                    # Übersetze deutsche Wortarten ins Englische
+                    pos_mapping = {
+                        'Substantiv': 'noun',
+                        'Verb': 'verb',
+                        'Adjektiv': 'adjective',
+                        'Adverb': 'adverb',
+                        'Pronomen': 'pronoun',
+                        'Präposition': 'preposition',
+                        'Konjunktion': 'conjunction',
+                        'Artikel': 'article',
+                        'Numerale': 'numeral',
+                        'Interjektion': 'interjection',
+                        'Redewendung': 'phrase',
+                        'Sprichwort': 'proverb',
+                        'Abkürzung': 'abbreviation',
+                        'Toponym': 'toponym',
+                        'Eigenname': 'proper_noun',
+                        'Deklinierte Form': 'inflected_noun',
+                        'Konjugierte Form': 'inflected_verb',
+                        'Partizip': 'participle',
+                        'Unbekannt': 'unknown'
+                    }
+                    entry['pos'] = pos_mapping.get(german_pos, 'unknown')
+                    
+                    # HINZUGEFÜGT: Wenn es eine Deklinierte oder Konjugierte Form ist, 
+                    # setzen wir die Grundform als Metadaten
+                    if german_pos in ['Deklinierte Form', 'Konjugierte Form', 'Partizip']:
+                        grundform_match = re.search(r'\[\[([^\]]+)\]\]', text)
+                        if grundform_match:
+                            entry['base_form'] = grundform_match.group(1).strip()
+                    
+                    # Debug-Ausgabe
+                    if self.debug and entry['pos'] != 'unknown':
+                        logger.debug(f"DEBUG: Wortart gefunden für {title}: {german_pos} -> {entry['pos']}")
+            
+            # Extrahiere IPA-Aussprache
+            ipa_match = None
+            if self.language == 'de':
+                # Verschiedene Muster für die IPA-Aussprache im deutschen Wiktionary
+                ipa_patterns = [
+                    r'\{\{Lautschrift\}\}\s*\[\[([^\]]+)\]\]',                # {{Lautschrift}} [[ˈvaːsɐ]]
+                    r'\{\{IPA\}\}\s*\{\{Lautschrift\|([^}]+)',                # {{IPA}} {{Lautschrift|ˈvaːsɐ}}
+                    r'\{\{IPA\}\}\s*\[\[([^\]]+)\]\]',                        # {{IPA}} [[ˈvaːsɐ]]
+                    r':{{IPA}}.*?{{Lautschrift\|([^}]+)}}',                   # :{{IPA}}...{{Lautschrift|ˈvaːsɐ}}
+                    r'{{Lautschrift\|([^}]+)}}',                              # {{Lautschrift|ˈvaːsɐ}}
+                    r':\[\[IPA\]\]: \[\[([^\]]+)\]\]'                         # :[[IPA]]: [[ˈvaːsɐ]]
+                ]
+                
+                for pattern in ipa_patterns:
+                    ipa_match = re.search(pattern, text)
+                    if ipa_match:
+                        break
+            
+            if ipa_match:
+                entry['ipa'] = ipa_match.group(1).strip()
+                
+                # Debug-Ausgabe
+                if self.debug:
+                    logger.debug(f"DEBUG: IPA gefunden für {title}: {entry['ipa']}")
+            
+            # Extrahiere Definitionen - verschiedene Methoden
+            definitions = []
+            
+            if self.language == 'de':
+                # Methode 1: Bereich zwischen {{Bedeutungen}} und dem nächsten Abschnitt
+                bedeutungen_section = False
+                for line in text.split('\n'):
+                    if '{{Bedeutungen}}' in line:
+                        bedeutungen_section = True
+                        continue
+                    # Prüfe auf Ende des Bedeutungs-Abschnitts (neuer Abschnitt oder neue Vorlage)
+                    elif bedeutungen_section and (
+                        line.strip().startswith('====') or 
+                        line.strip().startswith('===') or
+                        (line.strip().startswith('{{') and not line.strip().startswith('{{#'))):
+                        bedeutungen_section = False
+                        continue
+                    
+                    if bedeutungen_section and line.strip().startswith(':'):
+                        # Entferne führendes : und Leerzeichen
+                        definition_line = line.strip()[1:].strip()
                         
                         # Bereinige Wiki-Markup
+                        definition = re.sub(r'\[\[([^|\]]+\|)?([^\]]+)\]\]', r'\2', definition_line)
+                        definition = re.sub(r'\{\{[^}]+\}\}', '', definition)
+                        definition = re.sub(r'<[^>]+>', '', definition)
+                        definition = re.sub(r'\s+', ' ', definition).strip()
+                        
+                        # Entferne Referenzen wie <ref>...</ref>
+                        definition = re.sub(r'<ref>.*?</ref>', '', definition)
+                        definition = re.sub(r'<ref .*?</ref>', '', definition)
+                        definition = re.sub(r'<ref .*?/>', '', definition)
+                        
+                        if definition:
+                            definitions.append(definition)
+                            
+                            # Debug-Ausgabe
+                            if self.debug and len(definitions) == 1:
+                                logger.debug(f"DEBUG: Definition gefunden für {title}: {definition}")
+            
+                # Methode 2: Direkte Suche nach nummerierten Definitionen mit einem regulären Ausdruck
+                if not definitions:
+                    # Suche nach Definitionen im Format [1] Text oder :[1] Text
+                    bedeutungen_pattern = r'(?:\:)?\[\d+\]\s*([^\n\[\]]+)'
+                    for match in re.finditer(bedeutungen_pattern, text):
+                        definition = match.group(1).strip()
+                        
+                        # Bereinige Wiki-Markup wie oben
                         definition = re.sub(r'\[\[([^|\]]+\|)?([^\]]+)\]\]', r'\2', definition)
                         definition = re.sub(r'\{\{[^}]+\}\}', '', definition)
                         definition = re.sub(r'<[^>]+>', '', definition)
                         definition = re.sub(r'\s+', ' ', definition).strip()
                         
-                        if definition and definition not in definitions:
+                        if definition:
                             definitions.append(definition)
                             
                             # Debug-Ausgabe
                             if self.debug and len(definitions) == 1:
-                                logger.debug(f"DEBUG: Definition (Methode 3) gefunden für {title}: {definition}")
+                                logger.debug(f"DEBUG: Definition (Methode 2) gefunden für {title}: {definition}")
             
-            # Extrahiere Beispiele
-            examples = []
-            beispiele_section = False
-            for line in text.split('\n'):
-                if '{{Beispiele}}' in line:
-                    beispiele_section = True
-                    continue
-                elif beispiele_section and (
-                    line.strip().startswith('====') or 
-                    line.strip().startswith('===') or
-                    (line.strip().startswith('{{') and not line.strip().startswith('{{#'))):
-                    beispiele_section = False
-                    continue
-                
-                if beispiele_section and line.strip().startswith(':'):
-                    # Entferne führendes : und Leerzeichen
-                    example_line = line.strip()[1:].strip()
+                # Methode 3: Nach typischen Definition-Markierungen suchen, die nicht unbedingt mit {{Bedeutungen}} gekennzeichnet sind
+                if not definitions:
+                    definition_patterns = [
+                        r':\s*\[\d+\]\s*([^\n\[\]]+)',         # : [1] Definition
+                        r':\[\d+\]\s*([^\n\[\]]+)',           # :[1] Definition
+                        r'\[\d+\]\s*([^\n\[\]]+)',            # [1] Definition (ohne :)
+                        r'{{Bedeutung\|([^}]+)}}',            # {{Bedeutung|Definition}}
+                        r'Definition:\s*([^\n]+)',            # Definition: Text
+                        r'Bedeutung:\s*([^\n]+)'              # Bedeutung: Text
+                    ]
                     
-                    # Bereinige Wiki-Markup
-                    example = re.sub(r'\[\[([^|\]]+\|)?([^\]]+)\]\]', r'\2', example_line)
-                    example = re.sub(r'\{\{[^}]+\}\}', '', example)
-                    example = re.sub(r'<[^>]+>', '', example)
-                    example = re.sub(r'\s+', ' ', example).strip()
+                    for pattern in definition_patterns:
+                        for match in re.finditer(pattern, text):
+                            definition = match.group(1).strip()
+                            
+                            # Bereinige Wiki-Markup
+                            definition = re.sub(r'\[\[([^|\]]+\|)?([^\]]+)\]\]', r'\2', definition)
+                            definition = re.sub(r'\{\{[^}]+\}\}', '', definition)
+                            definition = re.sub(r'<[^>]+>', '', definition)
+                            definition = re.sub(r'\s+', ' ', definition).strip()
+                            
+                            if definition and definition not in definitions:
+                                definitions.append(definition)
+                                
+                                # Debug-Ausgabe
+                                if self.debug and len(definitions) == 1:
+                                    logger.debug(f"DEBUG: Definition (Methode 3) gefunden für {title}: {definition}")
+            
+                # Extrahiere Beispiele
+                examples = []
+                beispiele_section = False
+                for line in text.split('\n'):
+                    if '{{Beispiele}}' in line:
+                        beispiele_section = True
+                        continue
+                    elif beispiele_section and (
+                        line.strip().startswith('====') or 
+                        line.strip().startswith('===') or
+                        (line.strip().startswith('{{') and not line.strip().startswith('{{#'))):
+                        beispiele_section = False
+                        continue
                     
-                    # Entferne Referenzen
-                    example = re.sub(r'<ref>.*?</ref>', '', example)
-                    example = re.sub(r'<ref .*?</ref>', '', example)
-                    example = re.sub(r'<ref .*?/>', '', example)
-                    
-                    if example:
-                        examples.append(example)
+                    if beispiele_section and line.strip().startswith(':'):
+                        # Entferne führendes : und Leerzeichen
+                        example_line = line.strip()[1:].strip()
                         
-                        # Debug-Ausgabe
-                        if self.debug and len(examples) == 1:
-                            logger.debug(f"DEBUG: Beispiel gefunden für {title}: {example}")
+                        # Bereinige Wiki-Markup
+                        example = re.sub(r'\[\[([^|\]]+\|)?([^\]]+)\]\]', r'\2', example_line)
+                        example = re.sub(r'\{\{[^}]+\}\}', '', example)
+                        example = re.sub(r'<[^>]+>', '', example)
+                        example = re.sub(r'\s+', ' ', example).strip()
+                        
+                        # Entferne Referenzen
+                        example = re.sub(r'<ref>.*?</ref>', '', example)
+                        example = re.sub(r'<ref .*?</ref>', '', example)
+                        example = re.sub(r'<ref .*?/>', '', example)
+                        
+                        if example:
+                            examples.append(example)
+                            
+                            # Debug-Ausgabe
+                            if self.debug and len(examples) == 1:
+                                logger.debug(f"DEBUG: Beispiel gefunden für {title}: {example}")
+                
+                # Beschränke auf die ersten 3 Beispiele
+                entry['examples'] = examples[:3]
             
-            # Beschränke auf die ersten 3 Beispiele
-            entry['examples'] = examples[:3]
+            # Beschränke auf die ersten 5 Definitionen
+            entry['definitions'] = definitions[:5]
         
-        # Beschränke auf die ersten 5 Definitionen
-        entry['definitions'] = definitions[:5]
+        except Exception as e:
+            logger.error(f"Fehler beim Parsen von {title}: {e}", exc_info=self.debug)
+            return None
         
         # GEÄNDERT: Weniger strenge Validierung - wir akzeptieren mehr Einträge
         # Für deklinierte Formen ist keine Definition nötig
@@ -490,35 +500,43 @@ class WiktionaryDumpExtractor:
         extracted_entries = []
         aqea_entries = []
         
-        for title, text in pages:
-            # Parse den Wikitext
-            entry = self._parse_wikitext(title, text)
-            if entry:
-                extracted_entries.append(entry)
-                
-                # Konvertiere zu AQEA
-                try:
-                    # Da convert() eine async-Methode ist, müssen wir hier synchron arbeiten
-                    event_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(event_loop)
-                    aqea_entry = event_loop.run_until_complete(self.converter.convert(entry))
-                    event_loop.close()
+        # Erstelle einen einzigen Event-Loop für alle Einträge im Chunk
+        event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(event_loop)
+        
+        try:
+            for title, text in pages:
+                # Parse den Wikitext
+                entry = self._parse_wikitext(title, text)
+                if entry:
+                    extracted_entries.append(entry)
                     
-                    if aqea_entry:
-                        # Füge zusätzliche Informationen zum AQEA-Eintrag hinzu, falls vorhanden
-                        aqea_dict = aqea_entry.to_dict()
+                    # Konvertiere zu AQEA
+                    try:
+                        # Verwende den bestehenden Event-Loop für alle Konvertierungen
+                        aqea_entry = event_loop.run_until_complete(self.converter.convert(entry))
                         
-                        # Füge Beispiele hinzu, falls vorhanden
-                        if entry.get('examples') and len(entry['examples']) > 0:
-                            if 'meta' not in aqea_dict:
-                                aqea_dict['meta'] = {}
-                            aqea_dict['meta']['examples'] = entry['examples']
-                        
-                        aqea_entries.append(aqea_dict)
-                        
-                except Exception as e:
-                    if self.debug:
-                        logger.error(f"Fehler bei Konvertierung von {entry.get('word')}: {e}")
+                        if aqea_entry:
+                            # Füge zusätzliche Informationen zum AQEA-Eintrag hinzu, falls vorhanden
+                            aqea_dict = aqea_entry.to_dict()
+                            
+                            # Füge Beispiele hinzu, falls vorhanden
+                            if entry.get('examples') and len(entry['examples']) > 0:
+                                if 'meta' not in aqea_dict:
+                                    aqea_dict['meta'] = {}
+                                aqea_dict['meta']['examples'] = entry['examples']
+                            
+                            aqea_entries.append(aqea_dict)
+                        else:
+                            if self.debug:
+                                logger.debug(f"Konvertierung von {entry.get('word')} ergab keinen AQEA-Eintrag")
+                    except Exception as e:
+                        logger.error(f"Fehler bei Konvertierung von {entry.get('word', 'unknown')}: {e}")
+        except Exception as e:
+            logger.error(f"Fehler bei der Verarbeitung eines Chunks: {e}", exc_info=True)
+        finally:
+            # Schließe den Event-Loop am Ende
+            event_loop.close()
         
         return extracted_entries, aqea_entries
     
