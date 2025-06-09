@@ -1,22 +1,73 @@
 {
-    "database": {
-        "type": "sqlite",
-        "sqlite_path": "aqea.db"
+  "database": {
+    "type": "sqlite",
+    "sqlite_path": "data/aqea_extraction.db"
+  },
+  "language": "de",
+  "source": "wiktionary",
+  "expected_workers": 1,
+  "languages": {
+    "de": {
+      "name": "German",
+      "estimated_entries": 800000,
+      "alphabet_ranges": [
+        {
+          "start": "A",
+          "end": "E",
+          "weight": 0.2
+        },
+        {
+          "start": "F",
+          "end": "J",
+          "weight": 0.15
+        },
+        {
+          "start": "K",
+          "end": "O",
+          "weight": 0.175
+        },
+        {
+          "start": "P",
+          "end": "T",
+          "weight": 0.225
+        },
+        {
+          "start": "U",
+          "end": "Z",
+          "weight": 0.25
+        }
+      ]
     },
-    "aqea": {
-        "use_legacy_mode": false,
-        "enable_cross_linguistic": true,
-        "ush_version": "1.0",
-        "address_format": "ush"
-    },
-    "extraction": {
-        "batch_size": 10,
-        "max_entries_per_work_unit": 50,
-        "enable_ush_conversion": true,
-        "default_converter": "ush"
-    },
-    "logging": {
-        "level": "INFO",
-        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    "en": {
+      "name": "English",
+      "estimated_entries": 6000000,
+      "alphabet_ranges": [
+        {
+          "start": "A",
+          "end": "E",
+          "weight": 0.2
+        },
+        {
+          "start": "F",
+          "end": "J",
+          "weight": 0.15
+        },
+        {
+          "start": "K",
+          "end": "O",
+          "weight": 0.175
+        },
+        {
+          "start": "P",
+          "end": "T",
+          "weight": 0.225
+        },
+        {
+          "start": "U",
+          "end": "Z",
+          "weight": 0.25
+        }
+      ]
     }
+  }
 }

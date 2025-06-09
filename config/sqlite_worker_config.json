@@ -1,0 +1,8 @@
+{
+  "database": {
+    "type": "sqlite",
+    "sqlite_path": "data/aqea_extraction.db"
+  },
+  "language": "de",
+  "source": "wiktionary"
+}

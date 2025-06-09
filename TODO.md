@@ -7,6 +7,9 @@
 - ✅ **Dokumentation**: README.md aktualisiert mit Hinweisen zur Nutzung des Debug-Modus
 - ✅ **Konfiguration**: Konfiguration für Debug-Modus in `config/default.yml` unterstützt nun DEBUG-Level
 - ✅ **Logging**: Verbessertes Logging mit detaillierten Ausgaben
+- ✅ **SQLite Integration**: Direkte Datenspeicherung in lokaler SQLite-Datenbank ohne JSON-Dumps
+- ✅ **Speicheroptimierung**: Keine temporären JSON-Dateien mehr notwendig für Datenspeicherung
+- ✅ **Einfacher Start**: Neues Skript `start_with_sqlite.py` zum Starten des Systems mit SQLite-Datenbank
 
 ## 🚧 Offene Aufgaben
 
@@ -15,7 +18,7 @@
 - 🔴 **Adressgenerierungs-Erfolgsrate verbessern**: Aktuell werden nur 10-15% der extrahierten Einträge in AQEA-Adressen konvertiert
 - 🔴 **Akkumulierung und Batch-Speicherung**: Implementierung eines Worker-Moduls, das Einträge akkumuliert und erst nach Erreichen eines Schwellenwerts speichert (statt viele kleine Dateien)
 - 🔴 **Garantierte Datenspeicherung**: Sicherstellen, dass alle extrahierten Daten, auch ohne AQEA-Adresse, gespeichert werden
-- 🔴 **Datenbank-Integration**: Umstellung auf die offizielle Supabase Python API
+- ✅ **Datenbank-Integration**: Umstellung auf die offizielle Supabase Python API
 
 ### Mittlere Priorität
 
@@ -32,7 +35,7 @@
 ## 📝 Bekannte Probleme
 
 - ⚠️ **Niedrige Adressgenerations-Rate**: Nur ca. 10-15% der extrahierten Einträge erhalten eine AQEA-Adresse
-- ⚠️ **Datenakkumulation**: Zu viele kleine JSON-Dateien statt effizienter Batch-Speicherung
+- ✅ **Datenakkumulation**: Zu viele kleine JSON-Dateien statt effizienter Batch-Speicherung - GELÖST durch SQLite-Integration
 - ⚠️ **Sprachspezifische Verarbeitung**: Manche Wiktionary-Einträge werden nicht korrekt extrahiert aufgrund sprachspezifischer Markup-Unterschiede
 
 ## 💡 Ideen für die Zukunft
@@ -40,6 +43,7 @@
 - 🔮 **Sprachübergreifende semantische Verknüpfungen**: Implementierung des USH (Universal Semantic Hierarchy) Systems
 - 🔮 **Vector Embedding Integration**: Jeder AQEA-Eintrag erhält ein semantisches Embedding für Ähnlichkeitssuche
 - 🔮 **Automatisiertes Deployment**: Scripts für One-Click Deployment auf verschiedenen Cloud-Providern
+- 🔮 **Skalierte SQLite-Nutzung**: Multi-Worker SQLite mit Write-Ahead-Logging für höhere Parallelität
 
 # 📋 AQEA Distributed Extractor - TODO & Roadmap
 
