@@ -122,7 +122,7 @@ def start_master():
     
     cmd = [
         sys.executable, '-m', 'src.main', 'start-master',
-        '--language', 'deu',  # Use ISO 639-3 for internal consistency
+        '--language', 'de',   # Use de for German Wiktionary
         '--workers', '1',     # Single worker for stability
         '--source', 'wiktionary',
         '--port', '8080'

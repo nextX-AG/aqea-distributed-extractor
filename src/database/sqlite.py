@@ -31,9 +31,16 @@ class SQLiteDatabase:
     async def connect(self) -> bool:
         """Verbindung zur SQLite-Datenbank herstellen."""
         try:
-            # SQLite Connection erstellen
-            self.connection = sqlite3.connect(self.db_path)
-            self.connection.row_factory = sqlite3.Row
+            # SQLite Connection in Thread-Pool erstellen (non-blocking)
+            import asyncio
+            loop = asyncio.get_event_loop()
+            
+            def create_connection():
+                conn = sqlite3.connect(self.db_path, check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                return conn
+            
+            self.connection = await loop.run_in_executor(None, create_connection)
             
             # Tabellen erstellen, falls sie nicht existieren
             await self._create_tables()
@@ -54,85 +61,92 @@ class SQLiteDatabase:
     
     async def _create_tables(self):
         """Erstelle die benötigten Tabellen, falls sie nicht existieren."""
-        cursor = self.connection.cursor()
+        import asyncio
+        loop = asyncio.get_event_loop()
         
-        # AQEA Entries Tabelle
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS aqea_entries (
-            address TEXT PRIMARY KEY,
-            label TEXT,
-            description TEXT,
-            domain TEXT,
-            status TEXT,
-            created_at TEXT,
-            updated_at TEXT,
-            created_by TEXT,
-            lang_ui TEXT,
-            meta TEXT,
-            relations TEXT
-        )
-        ''')
+        def create_tables_sync():
+            cursor = self.connection.cursor()
+            
+            # AQEA Entries Tabelle
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS aqea_entries (
+                address TEXT PRIMARY KEY,
+                label TEXT,
+                description TEXT,
+                domain TEXT,
+                status TEXT,
+                created_at TEXT,
+                updated_at TEXT,
+                created_by TEXT,
+                lang_ui TEXT,
+                meta TEXT,
+                relations TEXT
+            )
+            ''')
+            
+            # Work Units Tabelle
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS work_units (
+                work_id TEXT PRIMARY KEY,
+                language TEXT,
+                source TEXT,
+                start_range TEXT,
+                end_range TEXT,
+                estimated_entries INTEGER,
+                status TEXT,
+                assigned_worker TEXT,
+                assigned_at TEXT,
+                completed_at TEXT,
+                updated_at TEXT,
+                entries_processed INTEGER,
+                processing_rate REAL,
+                errors TEXT
+            )
+            ''')
+            
+            # Worker Status Tabelle
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS worker_status (
+                worker_id TEXT PRIMARY KEY,
+                ip_address TEXT,
+                status TEXT,
+                current_work_id TEXT,
+                last_heartbeat TEXT,
+                total_processed INTEGER,
+                average_rate REAL,
+                registered_at TEXT
+            )
+            ''')
+            
+            # Address Allocations Tabelle
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS address_allocations (
+                aa_byte INTEGER,
+                qq_byte INTEGER,
+                ee_byte INTEGER,
+                a2_byte INTEGER,
+                reserved_by TEXT,
+                reserved_at TEXT,
+                language TEXT,
+                domain TEXT,
+                PRIMARY KEY (aa_byte, qq_byte, ee_byte, a2_byte)
+            )
+            ''')
+            
+            # Add missing columns to existing tables (migration)
+            try:
+                cursor.execute("ALTER TABLE work_units ADD COLUMN updated_at TEXT")
+                logger.info("✅ Added missing updated_at column to work_units table")
+            except sqlite3.OperationalError as e:
+                if "duplicate column name" in str(e).lower():
+                    logger.debug("updated_at column already exists in work_units table")
+                else:
+                    logger.warning(f"Could not add updated_at column: {e}")
+            
+            self.connection.commit()
         
-        # Work Units Tabelle
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS work_units (
-            work_id TEXT PRIMARY KEY,
-            language TEXT,
-            source TEXT,
-            start_range TEXT,
-            end_range TEXT,
-            estimated_entries INTEGER,
-            status TEXT,
-            assigned_worker TEXT,
-            assigned_at TEXT,
-            completed_at TEXT,
-            updated_at TEXT,
-            entries_processed INTEGER,
-            processing_rate REAL,
-            errors TEXT
-        )
-        ''')
-        
-        # Worker Status Tabelle
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS worker_status (
-            worker_id TEXT PRIMARY KEY,
-            ip_address TEXT,
-            status TEXT,
-            current_work_id TEXT,
-            last_heartbeat TEXT,
-            total_processed INTEGER,
-            average_rate REAL,
-            registered_at TEXT
-        )
-        ''')
-        
-        # Address Allocations Tabelle
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS address_allocations (
-            aa_byte INTEGER,
-            qq_byte INTEGER,
-            ee_byte INTEGER,
-            a2_byte INTEGER,
-            reserved_by TEXT,
-            reserved_at TEXT,
-            language TEXT,
-            domain TEXT,
-            PRIMARY KEY (aa_byte, qq_byte, ee_byte, a2_byte)
-        )
-        ''')
-        
-        # Add missing columns to existing tables (migration)
-        try:
-            cursor.execute("ALTER TABLE work_units ADD COLUMN updated_at TEXT")
-            logger.info("✅ Added missing updated_at column to work_units table")
-        except sqlite3.OperationalError as e:
-            if "duplicate column name" in str(e).lower():
-                logger.debug("updated_at column already exists in work_units table")
-            else:
-                logger.warning(f"Could not add updated_at column: {e}")
-        
-        self.connection.commit()
+        # Execute table creation in thread pool (non-blocking)
+        await loop.run_in_executor(None, create_tables_sync)
     
     # =========================================================================
     # AQEA ENTRIES MANAGEMENT

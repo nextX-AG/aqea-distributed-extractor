@@ -121,10 +121,10 @@ class WiktionaryDataSource:
         api_url = self.base_urls[language]
         all_pages = []
         
-        # Mehr Seiten laden mit kontinuierlichen API-Anfragen
+        # QUICK FIX: Lade nur wenige Seiten für Testing
         continue_token = None
         count = 0
-        max_pages = 100000  # Limit 
+        max_pages = 100  # DRASTISCH reduziert für Testing 
         
         logger.info(f"Fetching pages from {start_char} to {end_char} in {language} Wiktionary")
         
@@ -155,13 +155,9 @@ class WiktionaryDataSource:
                                     all_pages.append(title)
                                     count += 1
                             
-                            # Prüfe auf mehr Seiten
-                            if 'continue' in data and 'apcontinue' in data['continue']:
-                                continue_token = data['continue']['apcontinue']
-                                logger.debug(f"Continuing with token: {continue_token}")
-                                await asyncio.sleep(self.request_delay)  # API-Rate-Limit beachten
-                            else:
-                                break  # Keine weiteren Seiten
+                            # QUICK FIX: Stoppe nach ersten Batch für Testing
+                            logger.info(f"TESTING MODE: Stopping after first batch ({len(pages)} pages)")
+                            break  # Stoppe nach erstem Batch
                         else:
                             break
                     else:
