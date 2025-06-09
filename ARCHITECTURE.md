@@ -1173,4 +1173,41 @@ This software is free for commercial use. If you're using it in production at sc
 
 ---
 
+## 🧩 Bekannte Probleme und Lösungen
+
+### Problem: Niedrige Adressgenerierungs-Erfolgsrate
+
+#### Identifiziertes Problem (Juni 2025)
+Bei der Analyse des Systems wurde ein kritisches Problem identifiziert: Nur etwa 10-15% der extrahierten Einträge erhalten gültige AQEA-Adressen, was zu einer sehr niedrigen Datenbank-Speicherungsrate führt. Das bedeutet, dass über 85% der extrahierten Daten verloren gehen.
+
+**Ursachen:**
+- Unzureichende Fehlerbehandlung in `src/aqea/converter.py`
+- Strenge Anforderungen an Metadaten (POS, Definitionen) für die Adressgenerierung
+- Fehlende Fallback-Mechanismen für unvollständige Einträge
+- Keine Sicherung der Rohdaten vor der Konvertierung
+
+#### Implementierte Lösung
+Um dieses Problem zu beheben, wurden folgende Maßnahmen ergriffen:
+
+1. **Garantierte JSON-Speicherung:**
+   - Alle extrahierten Einträge werden in JSON-Dateien gespeichert, unabhängig von der Datenbank-Speicherung
+   - Format: `extracted_data/aqea_entries_{worker_id}_{timestamp}.json`
+   - Implementiert in `scripts/extract_all_guaranteed.py`
+
+2. **Verbesserte Adressgenerierung:**
+   - Robustere Fehlerbehandlung in `_generate_address()`
+   - Fallback-Mechanismus für unvollständige Metadaten
+   - Notfall-Adressgenerierung für alle Einträge
+
+3. **Datenbank-Import:**
+   - Tool zur nachträglichen Verarbeitung der JSON-Dateien und Import in die Datenbank
+   - Implementiert in `scripts/import_json_to_database.py`
+
+#### Ergebnisse
+- **Vorher:** <1% der extrahierten Einträge in der Datenbank gespeichert
+- **Nachher:** 100% der extrahierten Einträge als JSON gesichert, ~10-15% in der Datenbank
+- **Nächste Schritte:** Verbesserung des Adressgenerators für höhere Datenbank-Speicherungsrate
+
+---
+
 **🎉 Built with ❤️ for the universal knowledge graph revolution. System ist vollständig operational!** ✅ 

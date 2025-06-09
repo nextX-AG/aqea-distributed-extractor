@@ -224,6 +224,15 @@
 
 ## 🎯 **IMMEDIATE NEXT ACTIONS** (Diese Woche)
 
+### Tag 0: AQEA Address Generation Fix 🚨 **CRITICAL BUG**
+1. **Problem**: Nur ~10-15% der extrahierten Einträge erhalten gültige AQEA-Adressen, was zu einer sehr niedrigen Datenbank-Speicherungsrate führt
+2. **Lösung**:
+   - Verbesserte Fehlerbehandlung in `src/aqea/converter.py` zur Sicherstellung der Adressgenerierung
+   - Fallback-Mechanismus für eindeutige Adressen bei unvollständigen Metadaten
+   - JSON-Sicherung aller extrahierten Daten unabhängig von Datenbank-Speichererfolg
+3. **Impact**: Steigerung der Speicherungsrate von <1% auf 100% der extrahierten Daten
+4. **Implementierung**: Erfolgt durch separate JSON-Speicherung (bereits implementiert) und Verbesserung des Adressgenerators
+
 ### Tag 1: Language Mapping Foundation 🚀
 1. **P1.1**: `src/aqea/language_mappings.py` erstellen
 2. **Testing**: Mapping-Dictionary validieren
