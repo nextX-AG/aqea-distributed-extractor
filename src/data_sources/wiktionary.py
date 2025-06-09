@@ -124,7 +124,7 @@ class WiktionaryDataSource:
         # Mehr Seiten laden mit kontinuierlichen API-Anfragen
         continue_token = None
         count = 0
-        max_pages = 100  # Limit für die Testphase
+        max_pages = 100000  # Limit 
         
         logger.info(f"Fetching pages from {start_char} to {end_char} in {language} Wiktionary")
         
