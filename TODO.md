@@ -1,3 +1,46 @@
+# 📋 AQEA Distributed Extractor - TODO List
+
+## ✅ Erledigte Aufgaben
+
+- ✅ **CLI Verbesserungen**: `--verbose` Flag in `src.main` für `start-master` und `start-worker` Kommandos implementiert
+- ✅ **Debug Werkzeuge**: Neues Debug-Skript (`debug_extraction.py`) erstellt für einfache Diagnose
+- ✅ **Dokumentation**: README.md aktualisiert mit Hinweisen zur Nutzung des Debug-Modus
+- ✅ **Konfiguration**: Konfiguration für Debug-Modus in `config/default.yml` unterstützt nun DEBUG-Level
+- ✅ **Logging**: Verbessertes Logging mit detaillierten Ausgaben
+
+## 🚧 Offene Aufgaben
+
+### Hohe Priorität
+
+- 🔴 **Adressgenerierungs-Erfolgsrate verbessern**: Aktuell werden nur 10-15% der extrahierten Einträge in AQEA-Adressen konvertiert
+- 🔴 **Akkumulierung und Batch-Speicherung**: Implementierung eines Worker-Moduls, das Einträge akkumuliert und erst nach Erreichen eines Schwellenwerts speichert (statt viele kleine Dateien)
+- 🔴 **Garantierte Datenspeicherung**: Sicherstellen, dass alle extrahierten Daten, auch ohne AQEA-Adresse, gespeichert werden
+- 🔴 **Datenbank-Integration**: Umstellung auf die offizielle Supabase Python API
+
+### Mittlere Priorität
+
+- 🟠 **Fehlerbehandlung verbessern**: Robustere Fehlerbehandlung für unvollständige Wiktionary-Einträge
+- 🟠 **Performance-Optimierungen**: Verbesserte Parallelisierung und Ressourcennutzung
+- 🟠 **Multi-Server Deployment**: Unterstützung für Deployment auf mehreren Servern mit unterschiedlichen IPs für bessere Rate-Limit-Vermeidung
+
+### Niedrige Priorität
+
+- 🟡 **Admin UI**: Web-basiertes UI für Monitoring und Verwaltung
+- 🟡 **Worker-Balancing**: Dynamische Neuverteilung der Arbeit zwischen Workern basierend auf Performance
+- 🟡 **PanLex Integration**: Zusätzliche Datenquelle implementieren
+
+## 📝 Bekannte Probleme
+
+- ⚠️ **Niedrige Adressgenerations-Rate**: Nur ca. 10-15% der extrahierten Einträge erhalten eine AQEA-Adresse
+- ⚠️ **Datenakkumulation**: Zu viele kleine JSON-Dateien statt effizienter Batch-Speicherung
+- ⚠️ **Sprachspezifische Verarbeitung**: Manche Wiktionary-Einträge werden nicht korrekt extrahiert aufgrund sprachspezifischer Markup-Unterschiede
+
+## 💡 Ideen für die Zukunft
+
+- 🔮 **Sprachübergreifende semantische Verknüpfungen**: Implementierung des USH (Universal Semantic Hierarchy) Systems
+- 🔮 **Vector Embedding Integration**: Jeder AQEA-Eintrag erhält ein semantisches Embedding für Ähnlichkeitssuche
+- 🔮 **Automatisiertes Deployment**: Scripts für One-Click Deployment auf verschiedenen Cloud-Providern
+
 # 📋 AQEA Distributed Extractor - TODO & Roadmap
 
 > **🎉 FINAL SPECIFICATION IMPLEMENTED** ✅  

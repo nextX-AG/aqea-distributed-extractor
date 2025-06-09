@@ -2,7 +2,101 @@
 
 > **Universal Language Data Extraction at Scale**
 > 
-> Ein verteiltes System für die Extraktion von Sprachdaten aus mehreren Quellen (Wiktionary, PanLex, etc.) und Konvertierung in das **AQEA 4-byte addressing format** für universelle Wissensrepräsentation.
+> Ein distributed System für die Extraktion von Sprachdaten aus mehreren Quellen (Wiktionary, PanLex, etc.) und Konvertierung in das **AQEA 4-byte addressing format** für universelle Wissensrepräsentation.
+
+## Quick Start
+
+### Setup
+
+```bash
+# Repository klonen
+git clone https://github.com/nextX-AG/aqea-distributed-extractor
+cd aqea-distributed-extractor
+
+# Python 3.11 venv setup
+python3.11 -m venv aqea-venv
+source aqea-venv/bin/activate
+
+# Dependencies installieren
+pip install -r requirements.txt
+```
+
+### System starten
+
+#### Master starten:
+
+```bash
+python -m src.main start-master --language de --workers 2 --source wiktionary --port 8080 --verbose
+```
+
+#### Worker starten:
+
+```bash
+python -m src.main start-worker --worker-id worker-001 --master-host localhost --master-port 8080 --verbose
+```
+
+#### Akkumulierenden Worker starten:
+
+Um die Erzeugung zu vieler kleiner Dateien zu vermeiden, können Sie den akkumulierenden Worker verwenden:
+
+```bash
+python scripts/accumulating_worker.py --worker-id worker-001 --master-host localhost --master-port 8080 --batch-size 500 --flush-interval 300 --verbose
+```
+
+Parameter:
+- `--batch-size`: Anzahl der Einträge, nach denen ein Flush ausgeführt wird (Standard: 500)
+- `--flush-interval`: Zeitintervall in Sekunden, nach dem ein Flush erzwungen wird (Standard: 300)
+
+Die akkumulierten Daten werden in `extracted_data/accumulated/` gespeichert.
+
+#### Debug-Modus aktivieren:
+
+Sie können den Debug-Modus auf zwei Arten aktivieren:
+
+1. **Mit `--verbose` Flag beim Starten**:
+   ```bash
+   python -m src.main start-master --language de --workers 2 --verbose
+   ```
+
+2. **Mit Konfigurationsdatei**:
+   Bearbeiten Sie `config/default.yml` und setzen Sie:
+   ```yaml
+   logging:
+     level: "DEBUG"  # DEBUG, INFO, WARNING, ERROR
+   ```
+
+#### Status abrufen:
+
+```bash
+python -m src.main status
+```
+
+## Debugging Werkzeuge
+
+Für detaillierte Debugging-Informationen können Sie das spezielle Debug-Skript verwenden:
+
+```bash
+python scripts/debug_extraction.py
+```
+
+Dieses Skript extrahiert einen kleinen Testbereich und speichert sowohl die Rohdaten als auch die AQEA-konvertierten Einträge.
+
+## Problembehebung
+
+### Extrahierte Daten finden
+
+Alle extrahierten Daten werden in folgenden Verzeichnissen gespeichert:
+
+- **Rohdaten**: `extracted_data/raw_entries_*.json`
+- **AQEA-Einträge**: `extracted_data/aqea_entries_*.json`
+- **Akkumulierte Daten**: `extracted_data/accumulated/`
+- **Logs**: `logs/`
+
+### Bekannte Probleme
+
+- **Niedrige Adressgenerierungs-Erfolgsrate**: Nur etwa 10-15% der extrahierten Einträge erhalten gültige AQEA-Adressen. Dies ist ein bekanntes Problem und wird in der Architektur-Dokumentation beschrieben.
+
+- **Debug-Modus funktioniert nicht**: Verwenden Sie entweder das `--verbose` Flag oder setzen Sie `level: "DEBUG"` in der Konfigurationsdatei.
 
 ## Was ist AQEA?
 
@@ -74,44 +168,6 @@ Web Dashboard       ←→  Worker 5 (U-Z entries)   📋 Ready
 Supabase DB (Optional) - Für Produktion verfügbar
 ```
 
-## 🚀 **Quick Start** (✅ Getestet & Funktional)
-
-### Lokaler Betrieb (Empfohlen für Tests)
-```bash
-# 1. Repository klonen
-git clone https://github.com/nextX-AG/aqea-distributed-extractor.git
-cd aqea-distributed-extractor
-
-# 2. Python 3.11 venv setup (✅ Bewährt)
-python3.11 -m venv aqea-venv
-source aqea-venv/bin/activate
-
-# 3. Dependencies installieren
-pip install -r requirements.txt
-
-# 4. Master starten
-python -m src.main start-master --language de --workers 2 --source wiktionary --port 8080
-
-# 5. Workers starten (in separaten Terminals)
-python -m src.main start-worker --worker-id worker-001 --master-host localhost --master-port 8080
-python -m src.main start-worker --worker-id worker-002 --master-host localhost --master-port 8080
-
-# 6. Status prüfen
-curl http://localhost:8080/api/status
-```
-
-### Cloud Deployment (Mit Supabase Integration)
-```bash
-# Setup mit zentraler Datenbank
-./scripts/setup-cloud-database.sh setup \
-  --supabase-project YOUR_PROJECT_ID \
-  --supabase-password YOUR_PASSWORD
-
-# Multi-Cloud Deployment
-./scripts/setup-cloud-database.sh deploy-multi \
-  --workers 15 --language de
-```
-
 ## 📁 **Project Structure**
 
 ```
@@ -171,13 +227,13 @@ numpy==1.26.2               ✅ Numeric Computing
 ### Deutsche Extraktion starten (Lokal - Funktional)
 ```bash
 # Terminal 1: Master
-python -m src.main start-master --language de --workers 2 --source wiktionary --port 8080
+python -m src.main start-master --language de --workers 2 --source wiktionary --port 8080 --verbose
 
 # Terminal 2: Worker 1
-python -m src.main start-worker --worker-id worker-001 --master-host localhost --master-port 8080
+python -m src.main start-worker --worker-id worker-001 --master-host localhost --master-port 8080 --verbose
 
 # Terminal 3: Worker 2  
-python -m src.main start-worker --worker-id worker-002 --master-host localhost --master-port 8080
+python -m src.main start-worker --worker-id worker-002 --master-host localhost --master-port 8080 --verbose
 
 # Status prüfen
 curl http://localhost:8080/api/status | python -m json.tool
@@ -425,3 +481,30 @@ Eintrag 1:
 ## Weitere Informationen
 
 Siehe [ARCHITECTURE.md](ARCHITECTURE.md) für eine vollständige Dokumentation der Systemarchitektur und Komponenten. 
+
+## Debugging Werkzeuge
+
+Für detaillierte Debugging-Informationen können Sie das spezielle Debug-Skript verwenden:
+
+```bash
+python scripts/debug_extraction.py
+```
+
+Dieses Skript extrahiert einen kleinen Testbereich und speichert sowohl die Rohdaten als auch die AQEA-konvertierten Einträge.
+
+## Problembehebung
+
+### Extrahierte Daten finden
+
+Alle extrahierten Daten werden in folgenden Verzeichnissen gespeichert:
+
+- **Rohdaten**: `extracted_data/raw_entries_*.json`
+- **AQEA-Einträge**: `extracted_data/aqea_entries_*.json`
+- **Akkumulierte Daten**: `extracted_data/accumulated/`
+- **Logs**: `logs/`
+
+### Bekannte Probleme
+
+- **Niedrige Adressgenerierungs-Erfolgsrate**: Nur etwa 10-15% der extrahierten Einträge erhalten gültige AQEA-Adressen. Dies ist ein bekanntes Problem und wird in der Architektur-Dokumentation beschrieben.
+
+- **Debug-Modus funktioniert nicht**: Verwenden Sie entweder das `--verbose` Flag oder setzen Sie `level: "DEBUG"` in der Konfigurationsdatei. 

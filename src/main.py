@@ -45,8 +45,9 @@ def cli(ctx, config, verbose):
 @click.option('--port', '-p', default=8080, help='Master coordinator port')
 @click.option('--work-units-file', help='JSON file with predefined work units')
 @click.option('--config-file', help='Alternative config file (JSON)')
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging (DEBUG level)')
 @click.pass_context
-def start_master(ctx, language, workers, source, port, work_units_file, config_file):
+def start_master(ctx, language, workers, source, port, work_units_file, config_file, verbose):
     """Start the master coordinator server"""
     if config_file:
         # Lade benutzerdefinierte Konfiguration
@@ -57,11 +58,17 @@ def start_master(ctx, language, workers, source, port, work_units_file, config_f
     else:
         config = ctx.obj['config']
     
+    # Setup logging mit übergebenem verbose Flag
+    verbose = verbose or ctx.obj.get('verbose', False)
+    log_level = logging.DEBUG if verbose else logging.INFO
+    setup_logging(log_level)
+    
     click.echo(f"🎯 Starting AQEA Distributed Extractor - Master Mode")
     click.echo(f"   Language: {language}")
     click.echo(f"   Workers: {workers}")
     click.echo(f"   Source: {source}")
     click.echo(f"   Port: {port}")
+    click.echo(f"   Verbose: {verbose}")
     
     if work_units_file:
         click.echo(f"   Work Units: {work_units_file}")
@@ -85,14 +92,21 @@ def start_master(ctx, language, workers, source, port, work_units_file, config_f
 @click.option('--worker-id', '-i', required=True, help='Unique worker identifier')
 @click.option('--master-host', '-m', required=True, help='Master coordinator host/IP')
 @click.option('--master-port', '-p', default=8080, help='Master coordinator port')
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging (DEBUG level)')
 @click.pass_context
-def start_worker(ctx, worker_id, master_host, master_port):
+def start_worker(ctx, worker_id, master_host, master_port, verbose):
     """Start a worker extraction process"""
     config = ctx.obj['config']
+    
+    # Setup logging mit übergebenem verbose Flag
+    verbose = verbose or ctx.obj.get('verbose', False)
+    log_level = logging.DEBUG if verbose else logging.INFO
+    setup_logging(log_level)
     
     click.echo(f"🔧 Starting AQEA Extraction Worker")
     click.echo(f"   Worker ID: {worker_id}")
     click.echo(f"   Master: {master_host}:{master_port}")
+    click.echo(f"   Verbose: {verbose}")
     
     worker = ExtractionWorker(
         config=config,
