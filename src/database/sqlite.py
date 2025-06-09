@@ -86,6 +86,7 @@ class SQLiteDatabase:
             assigned_worker TEXT,
             assigned_at TEXT,
             completed_at TEXT,
+            updated_at TEXT,
             entries_processed INTEGER,
             processing_rate REAL,
             errors TEXT
@@ -120,6 +121,16 @@ class SQLiteDatabase:
             PRIMARY KEY (aa_byte, qq_byte, ee_byte, a2_byte)
         )
         ''')
+        
+        # Add missing columns to existing tables (migration)
+        try:
+            cursor.execute("ALTER TABLE work_units ADD COLUMN updated_at TEXT")
+            logger.info("✅ Added missing updated_at column to work_units table")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" in str(e).lower():
+                logger.debug("updated_at column already exists in work_units table")
+            else:
+                logger.warning(f"Could not add updated_at column: {e}")
         
         self.connection.commit()
     
@@ -663,7 +674,11 @@ async def get_database(config: Dict[str, Any]) -> SQLiteDatabase:
     
     if _db_instance is None:
         _db_instance = SQLiteDatabase(config)
-        await _db_instance.connect()
+        success = await _db_instance.connect()
+        if not success:
+            logger.error("❌ SQLite-Datenbank-Verbindung fehlgeschlagen")
+            _db_instance = None
+            return None
     
     return _db_instance
 

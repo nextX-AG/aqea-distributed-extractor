@@ -371,14 +371,21 @@ class ExtractionWorker:
         """Send periodic heartbeats to the database (if available)."""
         while self.is_running:
             try:
-                # Update worker status in Supabase database (if available)
+                # Update worker status in database (if available)
                 if self.database:
                     # Ensure database is still connected
-                    if not self.database.client:
-                        logger.warning("⚠️ Database client lost connection in heartbeat, reconnecting...")
+                    # Check for Supabase client OR SQLite connection
+                    needs_reconnect = False
+                    if hasattr(self.database, 'client') and not self.database.client:
+                        needs_reconnect = True
+                    elif hasattr(self.database, 'connection') and not self.database.connection:
+                        needs_reconnect = True
+                    
+                    if needs_reconnect:
+                        logger.warning("⚠️ Database connection lost in heartbeat, reconnecting...")
                         try:
                             self.database = await get_database(self.config)
-                            if not self.database or not self.database.client:
+                            if not self.database:
                                 logger.error("❌ Failed to reconnect to database")
                         except Exception as reconnect_error:
                             logger.error(f"❌ Error reconnecting to database: {reconnect_error}")
@@ -424,20 +431,23 @@ class ExtractionWorker:
         self.session = ClientSession()
         
         try:
-            # Try to connect to Supabase database (optional for local testing)
+            # Try to connect to database (SQLite or Supabase)
             try:
                 self.database = await get_database(self.config)
-                if self.database and hasattr(self.database, 'client') and self.database.client:
+                if self.database:
                     # Test connection with a simple query
                     test_result = await self.database.get_extraction_statistics()
-                    if test_result:
-                        logger.info("✅ Connected to Supabase database successfully")
+                    if test_result is not None:  # {} is valid, None is not
+                        if hasattr(self.database, 'client'):
+                            logger.info("✅ Connected to Supabase database successfully")
+                        else:
+                            logger.info("✅ Connected to SQLite database successfully")
                     else:
                         raise Exception("Database connection test failed")
                 else:
-                    raise Exception("Database connection returned None or invalid client")
+                    raise Exception("Database connection returned None")
             except Exception as e:
-                logger.warning(f"⚠️ Could not connect to Supabase database: {e}")
+                logger.warning(f"⚠️ Could not connect to database: {e}")
                 logger.info("📝 Running in HTTP-only mode (no database integration)")
                 self.database = None
             
