@@ -572,6 +572,33 @@ class EnhancedAQEAImporter:
         
         if not aqea_files:
             logger.warning(f"No AQEA JSON files found in {source_dir}")
+            
+            # Diagnose durchführen, um das Problem zu verstehen
+            raw_files = [f for f in files if "raw" in f.lower()]
+            if raw_files:
+                logger.info(f"Found {len(raw_files)} raw JSON files, but no AQEA files.")
+                logger.info("Checking raw files for content...")
+                
+                try:
+                    # Öffne eine der Raw-Dateien, um zu sehen, was drin ist
+                    with open(raw_files[0], 'r', encoding='utf-8') as f:
+                        raw_data = json.load(f)
+                        
+                    if raw_data and isinstance(raw_data, list) and len(raw_data) > 0:
+                        sample_entry = raw_data[0]
+                        has_definitions = bool(sample_entry.get('definitions', []))
+                        has_pos = bool(sample_entry.get('pos'))
+                        
+                        logger.info(f"Sample raw entry: {sample_entry}")
+                        logger.info(f"Has definitions: {has_definitions}, Has POS: {has_pos}")
+                        
+                        if not has_definitions and not has_pos:
+                            logger.error("Raw entries have no definitions or POS information.")
+                            logger.error("This is likely why AQEA conversion failed - insufficient data for meaningful conversion.")
+                    else:
+                        logger.error("Raw files exist but may be empty or malformed.")
+                except Exception as e:
+                    logger.error(f"Error analyzing raw files: {e}")
         else:
             logger.info(f"Found {len(aqea_files)} AQEA JSON files")
             
@@ -591,29 +618,47 @@ class EnhancedAQEAImporter:
             logger.error("No JSON files found to process")
             return False
         
-        # Verarbeitung mit Progress Bar
-        for json_file in tqdm(json_files, desc="Processing files"):
-            try:
-                with open(json_file, 'r', encoding='utf-8') as f:
-                    entries = json.load(f)
-                
-                if not isinstance(entries, list):
-                    logger.warning(f"Unexpected JSON structure in {json_file}")
+        # Verarbeitung mit verbessertem Progress Bar
+        with tqdm(total=len(json_files), 
+                 desc="Processing files", 
+                 bar_format="{l_bar}{bar:30}{r_bar}",
+                 unit="files") as pbar:
+            
+            for json_file in json_files:
+                try:
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        entries = json.load(f)
+                    
+                    if not isinstance(entries, list):
+                        logger.warning(f"Unexpected JSON structure in {json_file}")
+                        pbar.update(1)
+                        continue
+                    
+                    # Anzahl der Einträge für Status
+                    entry_count = len(entries)
+                    
+                    # Batch-Enhancement
+                    enhanced_entries = []
+                    for entry in entries:
+                        enhanced_entry = self.process_entry_with_enhanced_categorization(entry)
+                        enhanced_entries.append(enhanced_entry)
+                    
+                    # Batch-Insert in DB
+                    if enhanced_entries:
+                        self.insert_batch_to_database(enhanced_entries)
+                    
+                    # Progress Bar aktualisieren mit zusätzlichen Infos
+                    pbar.set_postfix({
+                        "Entries": entry_count,
+                        "Addr.Changes": self.stats['address_changes'],
+                        "Categories": len(self.stats['category_distribution'])
+                    })
+                    pbar.update(1)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing file {json_file}: {e}")
+                    pbar.update(1)
                     continue
-                
-                # Batch-Enhancement
-                enhanced_entries = []
-                for entry in entries:
-                    enhanced_entry = self.process_entry_with_enhanced_categorization(entry)
-                    enhanced_entries.append(enhanced_entry)
-                
-                # Batch-Insert in DB
-                if enhanced_entries:
-                    self.insert_batch_to_database(enhanced_entries)
-                
-            except Exception as e:
-                logger.error(f"Error processing file {json_file}: {e}")
-                continue
         
         # Schließe Datenbankverbindung
         if self.connection:
